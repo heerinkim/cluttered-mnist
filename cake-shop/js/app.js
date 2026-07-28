@@ -74,7 +74,9 @@ window.App = (function () {
     render();
   }
 
-  document.addEventListener('DOMContentLoaded', start);
+  // 화면이 이미 준비된 뒤에 불러와도 정상 동작하도록
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
 
   return { render: render, refreshShopName: refreshShopName };
 })();

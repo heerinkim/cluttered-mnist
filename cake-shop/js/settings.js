@@ -5,9 +5,8 @@ window.Settings = (function () {
     var s = DB.settings();
     var counts = {
       orders: DB.list('orders').length,
+      menus: DB.list('menus').length,
       inventory: DB.list('inventory').length,
-      ingredients: DB.list('ingredients').length,
-      recipes: DB.list('recipes').length,
       photos: DB.list('photos').length
     };
 
@@ -33,7 +32,7 @@ window.Settings = (function () {
         '<div class="grid three" style="margin:12px 0">' +
           '<div class="stat"><div class="label">주문</div><div class="value">' + counts.orders + '</div></div>' +
           '<div class="stat"><div class="label">재고 품목</div><div class="value">' + counts.inventory + '</div></div>' +
-          '<div class="stat"><div class="label">재료 · 레시피</div><div class="value">' + counts.ingredients + ' · ' + counts.recipes + '</div></div>' +
+          '<div class="stat"><div class="label">원가표 메뉴</div><div class="value">' + counts.menus + '</div></div>' +
         '</div>' +
         '<div class="row">' +
           '<button class="btn" id="bkExport">⬇️ 백업 파일 내려받기</button>' +

@@ -57,7 +57,7 @@ window.DB = (function () {
     ownerPhone: '',
     defaultMarginPct: 65,       // 판매가 제안 시 쓰는 마진율(%)
     laborPerCake: 8000,         // 케이크 1개당 기본 인건비(원)
-    reservationSource: 'manual' // 'manual' 또는 'naver'
+    reservationSource: 'manual' // 'manual'(직접 입력) 또는 'paste'(채팅 붙여넣기)
   };
   function settings() { return Object.assign({}, DEFAULT_SETTINGS, read('settings', {})); }
   function saveSettings(s) { return write('settings', Object.assign(settings(), s)); }
@@ -126,6 +126,7 @@ window.DB = (function () {
       settings: settings(),
       templates: templates(),
       orders: list('orders'),
+      menus: list('menus'),
       inventory: list('inventory'),
       ingredients: list('ingredients'),
       recipes: list('recipes'),
@@ -137,12 +138,12 @@ window.DB = (function () {
     if (!data || data._type !== 'cakeshop-backup') throw new Error('백업 파일이 아니에요');
     if (data.settings) write('settings', data.settings);
     if (data.templates) write('templates', data.templates);
-    ['orders', 'inventory', 'ingredients', 'recipes', 'options', 'photos'].forEach(function (k) {
+    ['orders', 'menus', 'inventory', 'ingredients', 'recipes', 'options', 'photos'].forEach(function (k) {
       if (Array.isArray(data[k])) saveList(k, data[k]);
     });
   }
   function clearAll() {
-    ['settings', 'templates', 'orders', 'inventory', 'ingredients', 'recipes', 'options', 'photos']
+    ['settings', 'templates', 'orders', 'menus', 'inventory', 'ingredients', 'recipes', 'options', 'photos']
       .forEach(function (k) { write(k, k === 'settings' || k === 'templates' ? {} : []); });
   }
 

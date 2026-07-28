@@ -2,6 +2,17 @@
    (설정 화면에서 [전체 초기화] 후 [예시 데이터 넣기]로 다시 넣을 수 있어요) */
 window.Seed = (function () {
 
+  // 사장님이 직접 적는 메뉴별 원가표 (숫자는 예시이니 실제 값으로 바꿔주세요)
+  function menus() {
+    return [
+      { name: '기본 생크림케이크 1호', cost: 17000, price: 38000, memo: '' },
+      { name: '딸기케이크 1호',       cost: 21000, price: 48000, memo: '딸기 시세에 따라 변동' },
+      { name: '생화케이크',           cost: 34000, price: 88000, memo: '생화 세척·와이어 작업 포함' },
+      { name: '생화케이크 2단',       cost: 62000, price: 145000, memo: '' },
+      { name: '레터링케이크 1호',      cost: 19000, price: 42000, memo: '' }
+    ];
+  }
+
   function ingredients() {
     return [
       { name: '무염버터',   packPrice: 12900, packQty: 1000, unit: 'g',  url: '', memo: '' },
@@ -101,7 +112,7 @@ window.Seed = (function () {
         note: '핑크·화이트 톤, 리본 포함', source: 'manual', status: 'reserved', orderDate: t },
       { customerName: '박서준', phone: '010-2222-3333', pickupDate: t, pickupTime: '11:00',
         request: '딸기케이크 1호 / 레터링 "생일 축하해"', price: 48000, cost: 21000, deposit: 20000,
-        note: '견과류 알러지', source: 'naver', status: 'reserved', orderDate: U.addDays(t, -3) },
+        note: '견과류 알러지', source: 'paste', status: 'reserved', orderDate: U.addDays(t, -3) },
       { customerName: '이하늘', phone: '010-9876-5432', pickupDate: U.addDays(t, -1), pickupTime: '16:30',
         request: '기본 생크림케이크 1호', price: 38000, cost: 16500, deposit: 0,
         note: '', source: 'manual', status: 'done', orderDate: U.addDays(t, -6) },
@@ -113,6 +124,7 @@ window.Seed = (function () {
 
   function install() {
     var ingIds = {}, invIds = {};
+    menus().forEach(function (m) { DB.upsert('menus', m); });
     ingredients().forEach(function (g) { ingIds[g.name] = DB.upsert('ingredients', g).id; });
     inventory().forEach(function (i) { invIds[i.name] = DB.upsert('inventory', i).id; });
     options().forEach(function (o) { DB.upsert('options', o); });
@@ -124,7 +136,7 @@ window.Seed = (function () {
   function installIfEmpty() {
     if (DB.read('seeded', false)) return;
     DB.write('seeded', true);
-    if (DB.list('ingredients').length || DB.list('orders').length) return;
+    if (DB.list('menus').length || DB.list('orders').length) return;
     install();
   }
 

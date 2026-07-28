@@ -36,13 +36,18 @@ window.App = (function () {
         U.esc(e.message) + '</p><button class="btn ghost" onclick="location.hash=\'#home\'">홈으로</button></div>';
       console.error(e);
     }
+    refreshShopName();
     window.scrollTo({ top: 0 });
   }
 
   function refreshShopName() {
     var s = DB.settings();
-    U.$('#shopName').textContent = s.shopName || '케이크 공방';
-    document.title = (s.shopName || '케이크 공방') + ' 운영 노트';
+    var name = s.shopName || '케이크 공방';
+    U.$('#shopName').textContent = name;
+    // 보낼 알림이 있으면 브라우저 탭 제목에 건수를 붙여 놓치지 않게 함
+    var n = 0;
+    try { n = Notify.totalCount(); } catch (e) { n = 0; }
+    document.title = (n ? '(' + n + ') ' : '') + name + ' 운영 노트';
   }
 
   function start() {

@@ -205,6 +205,21 @@ table input,table select{padding:6px 8px;font-size:14px}
 }
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
+/* 붙여넣기 미리보기 - 좁은 팝업에서도 두 칸으로 */
+.pv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.pv-row .field{margin-bottom:8px}
+.pv-row label{font-size:12px}
+
+/* ---------- 접었다 펴는 영역 ---------- */
+details.adv summary{
+  cursor:pointer;font-size:16px;font-weight:700;letter-spacing:-.02em;
+  list-style:none;display:flex;align-items:center;gap:8px;
+}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary::before{content:'▸';color:var(--rose);font-size:14px}
+details.adv[open] summary::before{content:'▾'}
+details.adv summary:hover{color:var(--rose-dark)}
+
 .empty{text-align:center;color:var(--ink-soft);padding:28px 10px;font-size:14px}
 .divider{height:1px;background:var(--line);margin:14px 0}
 code{background:#f6efe9;padding:1px 5px;border-radius:5px;font-size:13px}

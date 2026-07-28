@@ -1,0 +1,75 @@
+/* 화면 전환(라우터) + 시작 */
+window.App = (function () {
+
+  var ROUTES = {
+    home: Home,
+    orders: Orders,
+    monthly: Monthly,
+    inventory: Inventory,
+    gallery: Gallery,
+    cost: Cost,
+    notify: Notify,
+    settings: Settings
+  };
+
+  function current() {
+    var r = (location.hash || '#home').slice(1);
+    return ROUTES[r] ? r : 'home';
+  }
+
+  function render() {
+    var route = current();
+    // 화면을 새 요소로 갈아끼웁니다.
+    // (이전 화면에 붙여둔 클릭 이벤트가 쌓여서 두 번씩 실행되는 것을 막기 위함)
+    var old = U.$('#view');
+    var view = document.createElement('main');
+    view.id = 'view';
+    view.className = 'view';
+    old.parentNode.replaceChild(view, old);
+    U.$$('#tabs button').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.route === route);
+    });
+    try {
+      ROUTES[route].render(view);
+    } catch (e) {
+      view.innerHTML = '<div class="card"><h2>문제가 생겼어요</h2><p class="hint">' +
+        U.esc(e.message) + '</p><button class="btn ghost" onclick="location.hash=\'#home\'">홈으로</button></div>';
+      console.error(e);
+    }
+    window.scrollTo({ top: 0 });
+  }
+
+  function refreshShopName() {
+    var s = DB.settings();
+    U.$('#shopName').textContent = s.shopName || '케이크 공방';
+    document.title = (s.shopName || '케이크 공방') + ' 운영 노트';
+  }
+
+  function start() {
+    Seed.installIfEmpty();
+    refreshShopName();
+    U.$('#todayLabel').textContent = U.korDateFull(U.today());
+
+    U.$$('#tabs button').forEach(function (b) {
+      b.onclick = function () { location.hash = '#' + b.dataset.route; };
+    });
+    window.addEventListener('hashchange', render);
+
+    U.$('#modalClose').onclick = U.closeModal;
+    U.$('#modal').addEventListener('click', function (e) {
+      if (e.target.id === 'modal') U.closeModal();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !U.$('#modal').hidden) U.closeModal();
+    });
+
+    if (!DB.storageOk) {
+      U.toast('저장이 안 되는 환경이에요. 설정 화면의 안내를 확인해 주세요.');
+    }
+    render();
+  }
+
+  document.addEventListener('DOMContentLoaded', start);
+
+  return { render: render, refreshShopName: refreshShopName };
+})();

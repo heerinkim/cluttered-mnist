@@ -1,0 +1,2952 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>케이크 공방 운영 노트</title>
+<style>
+:root{
+  --cream:#fff9f3;
+  --card:#ffffff;
+  --ink:#3d2b23;
+  --ink-soft:#7a6259;
+  --line:#f0e2d6;
+  --rose:#d9738a;
+  --rose-dark:#c25a73;
+  --rose-soft:#fdeef1;
+  --mint:#4aa792;
+  --amber:#e0973f;
+  --red:#d9534f;
+  --shadow:0 2px 10px rgba(120,80,60,.08);
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--cream);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  font-size:15px;line-height:1.55;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3,h4{margin:0 0 .5rem;font-weight:700;letter-spacing:-.02em}
+p{margin:0 0 .5rem}
+a{color:var(--rose-dark)}
+
+/* ---------- top bar ---------- */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 18px;background:#fff;border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{font-size:30px;line-height:1}
+.topbar h1{font-size:19px;margin:0}
+.sub{font-size:12px;color:var(--ink-soft);margin:0}
+.today-chip{
+  background:var(--rose-soft);color:var(--rose-dark);
+  padding:6px 12px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;
+}
+
+/* ---------- tabs ---------- */
+.tabs{
+  display:flex;gap:6px;padding:10px 14px;overflow-x:auto;
+  background:#fff;border-bottom:1px solid var(--line);
+  position:sticky;top:63px;z-index:19;-webkit-overflow-scrolling:touch;
+}
+.tabs::-webkit-scrollbar{height:0}
+.tabs button{
+  flex:0 0 auto;border:1px solid var(--line);background:#fff;color:var(--ink-soft);
+  padding:8px 14px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;
+  font-family:inherit;
+}
+.tabs button:hover{background:var(--rose-soft)}
+.tabs button.active{background:var(--rose);border-color:var(--rose);color:#fff}
+
+/* ---------- layout ---------- */
+.view{max-width:1080px;margin:0 auto;padding:18px 14px 80px}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;margin-bottom:16px;box-shadow:var(--shadow);
+}
+.card h2{font-size:17px;display:flex;align-items:center;gap:8px}
+.card h3{font-size:15px}
+.hint{font-size:13px;color:var(--ink-soft);margin:4px 0 12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+.spacer{flex:1}
+.grid{display:grid;gap:12px}
+.grid.two{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.grid.three{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.grid.four{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+
+/* ---------- forms ---------- */
+label{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:4px}
+input,select,textarea{
+  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+  font-size:15px;font-family:inherit;color:var(--ink);background:#fff;
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--rose-soft);border-color:var(--rose)}
+textarea{min-height:70px;resize:vertical}
+.field{margin-bottom:12px}
+.inline-field{display:flex;gap:8px;align-items:flex-end}
+.inline-field>div{flex:1}
+
+button{font-family:inherit}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--rose);color:#fff;border:none;padding:11px 18px;border-radius:10px;
+  font-size:15px;font-weight:700;cursor:pointer;
+}
+.btn:hover{background:var(--rose-dark)}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover{background:var(--rose-soft)}
+.btn.small{padding:7px 12px;font-size:13px;border-radius:8px}
+.btn.danger{background:var(--red)}
+.btn.mint{background:var(--mint)}
+.icon-btn{
+  background:transparent;border:none;font-size:17px;cursor:pointer;color:var(--ink-soft);
+  padding:4px 6px;border-radius:6px;
+}
+.icon-btn:hover{background:var(--rose-soft)}
+
+/* ---------- tables ---------- */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+th,td{padding:10px 8px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--ink-soft);font-weight:700;background:#fffdfb;white-space:nowrap}
+td.num,th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+tr.low td{background:#fff6f5}
+tfoot td{font-weight:700;background:#fffdfb}
+table input,table select{padding:6px 8px;font-size:14px}
+
+/* ---------- stats ---------- */
+.stat{
+  background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px;
+  box-shadow:var(--shadow);
+}
+.stat .label{font-size:12px;color:var(--ink-soft);font-weight:700}
+.stat .value{font-size:22px;font-weight:800;letter-spacing:-.03em;margin-top:2px;font-variant-numeric:tabular-nums}
+.stat.rose .value{color:var(--rose-dark)}
+.stat.mint .value{color:var(--mint)}
+.stat.amber .value{color:var(--amber)}
+
+/* ---------- badges ---------- */
+.badge{
+  display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;
+  background:var(--rose-soft);color:var(--rose-dark);white-space:nowrap;
+}
+.badge.gray{background:#f2efec;color:var(--ink-soft)}
+.badge.mint{background:#e4f4f0;color:#2f7d6c}
+.badge.amber{background:#fdf1e0;color:#a86c1c}
+.badge.red{background:#fdeceb;color:#b93b37}
+
+/* ---------- calendar ---------- */
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.cal-title{font-size:17px;font-weight:800}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .dow{text-align:center;font-size:12px;font-weight:700;color:var(--ink-soft);padding:4px 0}
+.cal .dow.sun{color:var(--red)}
+.cal .day{
+  min-height:88px;border:1px solid var(--line);border-radius:10px;padding:5px;background:#fff;
+  cursor:pointer;overflow:hidden;
+}
+.cal .day.empty{background:transparent;border:none;cursor:default}
+.cal .day:hover{border-color:var(--rose)}
+.cal .day.today{border:2px solid var(--rose);background:var(--rose-soft)}
+.cal .dnum{font-size:12px;font-weight:700;color:var(--ink-soft)}
+.cal .day.sun .dnum{color:var(--red)}
+.cal .ev{
+  font-size:11px;background:var(--rose-soft);color:var(--rose-dark);border-radius:6px;
+  padding:2px 5px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;
+}
+.cal .ev.done{background:#eef0ef;color:var(--ink-soft)}
+.cal .more{font-size:10px;color:var(--ink-soft);margin-top:2px}
+@media (max-width:640px){
+  .cal .day{min-height:64px;padding:3px}
+  .cal .ev{font-size:10px;padding:1px 3px}
+}
+
+/* ---------- gallery ---------- */
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.gal figure{margin:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;cursor:pointer}
+.gal img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}
+.gal figcaption{padding:7px 8px;font-size:12px}
+.gal .cap-title{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gal .cap-sub{color:var(--ink-soft);font-size:11px}
+.lightbox img{width:100%;border-radius:10px;margin-bottom:10px}
+
+/* ---------- notify queue ---------- */
+.q-item{
+  border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:#fff;
+}
+.q-item.sent{opacity:.55}
+.q-msg{
+  background:#fffdfb;border:1px dashed var(--line);border-radius:10px;padding:10px;
+  font-size:13px;white-space:pre-wrap;margin:8px 0;
+}
+
+/* ---------- modal ---------- */
+.modal-back{
+  position:fixed;inset:0;background:rgba(60,40,32,.45);z-index:50;
+  display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;
+}
+/* hidden 속성이 display:flex 에 밀리지 않도록 */
+.modal-back[hidden]{display:none}
+.modal{
+  background:#fff;border-radius:16px;width:min(560px,100%);margin:auto;
+  box-shadow:0 12px 40px rgba(60,40,32,.25);
+}
+.modal-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--line);
+}
+.modal-head h3{margin:0;font-size:16px}
+.modal-body{padding:16px}
+
+/* ---------- toast ---------- */
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,24px);
+  background:var(--ink);color:#fff;padding:11px 18px;border-radius:999px;font-size:14px;font-weight:600;
+  opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90vw;text-align:center;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* 붙여넣기 미리보기 - 좁은 팝업에서도 두 칸으로 */
+.pv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.pv-row .field{margin-bottom:8px}
+.pv-row label{font-size:12px}
+
+/* ---------- 접었다 펴는 영역 ---------- */
+details.adv summary{
+  cursor:pointer;font-size:16px;font-weight:700;letter-spacing:-.02em;
+  list-style:none;display:flex;align-items:center;gap:8px;
+}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary::before{content:'▸';color:var(--rose);font-size:14px}
+details.adv[open] summary::before{content:'▾'}
+details.adv summary:hover{color:var(--rose-dark)}
+
+.empty{text-align:center;color:var(--ink-soft);padding:28px 10px;font-size:14px}
+.divider{height:1px;background:var(--line);margin:14px 0}
+code{background:#f6efe9;padding:1px 5px;border-radius:5px;font-size:13px}
+.warn{background:#fff8e8;border:1px solid #f3e2bd;border-radius:10px;padding:10px 12px;font-size:13px;color:#7a5a1c}
+.info{background:#eef6f4;border:1px solid #cfe6e0;border-radius:10px;padding:10px 12px;font-size:13px;color:#2f6b5e}
+
+</style>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">🎂</span>
+    <div>
+      <h1 id="shopName">케이크 공방</h1>
+      <p class="sub">주문 · 정산 · 재고 · 원가 관리</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="todayLabel" class="today-chip"></span>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-route="home">🏠 홈</button>
+  <button data-route="orders">📝 주문·달력</button>
+  <button data-route="monthly">📊 월별정산</button>
+  <button data-route="inventory">📦 재고</button>
+  <button data-route="gallery">🖼️ 갤러리</button>
+  <button data-route="cost">💰 원가표</button>
+  <button data-route="notify">💬 알림</button>
+  <button data-route="settings">⚙️ 설정</button>
+</nav>
+
+<main id="view" class="view"></main>
+
+<div id="toast" class="toast"></div>
+
+<div id="modal" class="modal-back" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3 id="modalTitle">제목</h3>
+      <button class="icon-btn" id="modalClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+<script>
+/* ===== js/utils.js ===== */
+/* 공통 도구 모음 (날짜, 금액, 화면 그리기 도우미) */
+window.U = (function () {
+
+  /* ---------- 날짜 ---------- */
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  // Date -> "2026-07-27"
+  function ymd(d) {
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  // "2026-07-27" -> Date (시간은 00:00, 로컬 기준)
+  function parseYmd(s) {
+    if (!s) return null;
+    var p = String(s).split('-');
+    if (p.length !== 3) return null;
+    return new Date(+p[0], +p[1] - 1, +p[2]);
+  }
+  function today() { return ymd(new Date()); }
+  // 날짜 문자열에 일수 더하기 ("2026-07-27", 1) -> "2026-07-28"
+  function addDays(s, n) {
+    var d = parseYmd(s); if (!d) return '';
+    d.setDate(d.getDate() + n);
+    return ymd(d);
+  }
+  var DOW = ['일', '월', '화', '수', '목', '금', '토'];
+  // "2026-07-27" -> "7월 27일 (월)"
+  function korDate(s) {
+    var d = parseYmd(s); if (!d) return '';
+    return (d.getMonth() + 1) + '월 ' + d.getDate() + '일 (' + DOW[d.getDay()] + ')';
+  }
+  // "2026-07-27" -> "2026년 7월 27일 (월)"
+  function korDateFull(s) {
+    var d = parseYmd(s); if (!d) return '';
+    return d.getFullYear() + '년 ' + korDate(s);
+  }
+  // "2026-07" 형태의 이번 달
+  function thisMonth() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1); }
+  // "2026-07" 을 n개월 이동
+  function shiftMonth(m, n) {
+    var p = m.split('-'), d = new Date(+p[0], +p[1] - 1 + n, 1);
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1);
+  }
+  function monthTitle(m) { var p = m.split('-'); return +p[0] + '년 ' + (+p[1]) + '월'; }
+  // 해당 달의 마지막 날짜 (28~31)
+  function lastDayOfMonth(m) { var p = m.split('-'); return new Date(+p[0], +p[1], 0).getDate(); }
+  // 두 날짜 사이 일수 (b - a)
+  function diffDays(a, b) {
+    var da = parseYmd(a), db = parseYmd(b);
+    if (!da || !db) return 0;
+    return Math.round((db - da) / 86400000);
+  }
+
+  /* ---------- 금액/숫자 ---------- */
+  function won(n) {
+    n = Math.round(Number(n) || 0);
+    return n.toLocaleString('ko-KR') + '원';
+  }
+  function num(n) { return (Math.round(Number(n) || 0)).toLocaleString('ko-KR'); }
+  // "35,000원" / "35000" -> 35000
+  function toNum(v) {
+    if (v === null || v === undefined) return 0;
+    var s = String(v).replace(/[^0-9.\-]/g, '');
+    var n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  }
+  // 전화번호 정리: 01012345678 -> 010-1234-5678
+  function phone(p) {
+    var d = String(p || '').replace(/[^0-9]/g, '');
+    if (d.length === 11) return d.slice(0, 3) + '-' + d.slice(3, 7) + '-' + d.slice(7);
+    if (d.length === 10) return d.slice(0, 3) + '-' + d.slice(3, 6) + '-' + d.slice(6);
+    return p || '';
+  }
+  function phoneDigits(p) { return String(p || '').replace(/[^0-9]/g, ''); }
+
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  /* ---------- 화면 도우미 ---------- */
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+  }
+
+  function modal(title, html, onOpen) {
+    $('#modalTitle').textContent = title;
+    $('#modalBody').innerHTML = html;
+    $('#modal').hidden = false;
+    if (onOpen) onOpen($('#modalBody'));
+  }
+  function closeModal() { $('#modal').hidden = true; $('#modalBody').innerHTML = ''; }
+
+  function confirmBox(msg) { return window.confirm(msg); }
+
+  // 표를 CSV 파일로 내려받기 (엑셀에서 열림)
+  function downloadCsv(filename, rows) {
+    var csv = rows.map(function (r) {
+      return r.map(function (c) {
+        var s = String(c === null || c === undefined ? '' : c);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }).join(',');
+    }).join('\r\n');
+    // 엑셀 한글 깨짐 방지용 BOM
+    downloadBlob(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }), filename);
+  }
+  function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () { toast('복사했어요'); })
+        .catch(function () { fallbackCopy(text); });
+    }
+    fallbackCopy(text);
+    return Promise.resolve();
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast('복사했어요'); } catch (e) { toast('복사 실패 - 직접 선택해 주세요'); }
+    ta.remove();
+  }
+
+  return {
+    ymd: ymd, parseYmd: parseYmd, today: today, addDays: addDays, korDate: korDate,
+    korDateFull: korDateFull, thisMonth: thisMonth, shiftMonth: shiftMonth,
+    monthTitle: monthTitle, lastDayOfMonth: lastDayOfMonth, diffDays: diffDays, DOW: DOW, pad: pad,
+    won: won, num: num, toNum: toNum, phone: phone, phoneDigits: phoneDigits, uid: uid,
+    esc: esc, $: $, $$: $$, toast: toast, modal: modal, closeModal: closeModal,
+    confirmBox: confirmBox, downloadCsv: downloadCsv, downloadBlob: downloadBlob, copyText: copyText
+  };
+})();
+
+/* ===== js/db.js ===== */
+/* 데이터 저장소
+   - 글자 데이터(주문/재고/재료/레시피/설정)는 localStorage 에 저장합니다.
+   - 사진은 용량이 커서 IndexedDB(브라우저 안의 큰 창고)에 따로 저장합니다.
+   - 모든 데이터는 "사장님 브라우저 안"에만 저장되며 외부로 나가지 않습니다.
+     => 그래서 설정 화면의 [백업 파일 내려받기]를 주기적으로 꼭 눌러주세요. */
+window.DB = (function () {
+
+  var PREFIX = 'cakeshop:';
+  var memoryFallback = {};   // localStorage 를 못 쓰는 환경(사파리 파일열기 등) 대비
+  var storageOk = (function () {
+    try {
+      window.localStorage.setItem(PREFIX + '__t', '1');
+      window.localStorage.removeItem(PREFIX + '__t');
+      return true;
+    } catch (e) { return false; }
+  })();
+
+  function read(key, fallback) {
+    var raw;
+    try { raw = storageOk ? localStorage.getItem(PREFIX + key) : memoryFallback[key]; }
+    catch (e) { raw = memoryFallback[key]; }
+    if (raw === null || raw === undefined) return fallback;
+    try { return JSON.parse(raw); } catch (e) { return fallback; }
+  }
+  function write(key, value) {
+    var raw = JSON.stringify(value);
+    memoryFallback[key] = raw;
+    if (storageOk) {
+      try { localStorage.setItem(PREFIX + key, raw); }
+      catch (e) { U.toast('저장 공간이 가득 찼어요. 설정에서 백업 후 정리해 주세요.'); }
+    }
+    return value;
+  }
+
+  /* ---------- 컬렉션(목록) 공통 ---------- */
+  function list(key) { return read(key, []); }
+  function saveList(key, arr) { return write(key, arr); }
+  function upsert(key, item) {
+    var arr = list(key);
+    if (!item.id) { item.id = U.uid(); item.createdAt = new Date().toISOString(); }
+    item.updatedAt = new Date().toISOString();
+    var i = arr.findIndex(function (x) { return x.id === item.id; });
+    if (i >= 0) arr[i] = Object.assign({}, arr[i], item); else arr.push(item);
+    saveList(key, arr);
+    return item;
+  }
+  function remove(key, id) {
+    saveList(key, list(key).filter(function (x) { return x.id !== id; }));
+  }
+  function find(key, id) {
+    return list(key).find(function (x) { return x.id === id; }) || null;
+  }
+
+  /* ---------- 설정 ---------- */
+  var DEFAULT_SETTINGS = {
+    shopName: '케이크 공방',
+    ownerPhone: '',
+    defaultMarginPct: 65,       // 판매가 제안 시 쓰는 마진율(%)
+    laborPerCake: 8000,         // 케이크 1개당 기본 인건비(원)
+    reservationSource: 'manual' // 'manual'(직접 입력) 또는 'paste'(채팅 붙여넣기)
+  };
+  function settings() { return Object.assign({}, DEFAULT_SETTINGS, read('settings', {})); }
+  function saveSettings(s) { return write('settings', Object.assign(settings(), s)); }
+
+  /* ---------- 알림 문구 ---------- */
+  var DEFAULT_TEMPLATES = {
+    orderDay: '[{{가게이름}}] {{고객명}}님, 주문 감사합니다 🎂\n· 픽업: {{픽업일}} {{픽업시간}}\n· 내용: {{주문내용}}\n· 금액: {{금액}}\n변경이 필요하시면 편하게 연락 주세요!',
+    dayBefore: '[{{가게이름}}] {{고객명}}님, 내일 {{픽업시간}}에 케이크 픽업 예정입니다 🍰\n· 내용: {{주문내용}}\n· 잔금: {{잔금}}\n케이크는 서늘한 곳에 보관해 주세요. 내일 뵙겠습니다!',
+    afterPickup: '[{{가게이름}}] {{고객명}}님, 오늘 케이크는 어떠셨나요? 😊\n소중한 순간 함께하게 해주셔서 감사합니다.\n후기를 남겨주시면 큰 힘이 됩니다!'
+  };
+  function templates() { return Object.assign({}, DEFAULT_TEMPLATES, read('templates', {})); }
+  function saveTemplates(t) { return write('templates', Object.assign(templates(), t)); }
+
+  /* ---------- 사진 창고 (IndexedDB) ---------- */
+  var idbPromise = null;
+  function idb() {
+    if (idbPromise) return idbPromise;
+    idbPromise = new Promise(function (resolve, reject) {
+      if (!window.indexedDB) { reject(new Error('이 브라우저는 사진 저장을 지원하지 않아요')); return; }
+      var req = indexedDB.open('cakeshop-photos', 1);
+      req.onupgradeneeded = function () {
+        var db = req.result;
+        if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos');
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+    return idbPromise;
+  }
+  function photoPut(id, blob) {
+    return idb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction('photos', 'readwrite');
+        tx.objectStore('photos').put(blob, id);
+        tx.oncomplete = function () { resolve(id); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    });
+  }
+  function photoGet(id) {
+    return idb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction('photos', 'readonly');
+        var r = tx.objectStore('photos').get(id);
+        r.onsuccess = function () { resolve(r.result || null); };
+        r.onerror = function () { reject(r.error); };
+      });
+    });
+  }
+  function photoDel(id) {
+    return idb().then(function (db) {
+      return new Promise(function (resolve) {
+        var tx = db.transaction('photos', 'readwrite');
+        tx.objectStore('photos').delete(id);
+        tx.oncomplete = function () { resolve(); };
+      });
+    });
+  }
+
+  /* ---------- 백업 / 복원 ---------- */
+  function exportAll() {
+    return {
+      _type: 'cakeshop-backup',
+      _version: 1,
+      exportedAt: new Date().toISOString(),
+      settings: settings(),
+      templates: templates(),
+      orders: list('orders'),
+      menus: list('menus'),
+      inventory: list('inventory'),
+      ingredients: list('ingredients'),
+      recipes: list('recipes'),
+      options: list('options'),
+      photos: list('photos')   // 사진 설명만 (이미지 파일은 용량이 커서 제외)
+    };
+  }
+  function importAll(data) {
+    if (!data || data._type !== 'cakeshop-backup') throw new Error('백업 파일이 아니에요');
+    if (data.settings) write('settings', data.settings);
+    if (data.templates) write('templates', data.templates);
+    ['orders', 'menus', 'inventory', 'ingredients', 'recipes', 'options', 'photos'].forEach(function (k) {
+      if (Array.isArray(data[k])) saveList(k, data[k]);
+    });
+  }
+  function clearAll() {
+    ['settings', 'templates', 'orders', 'menus', 'inventory', 'ingredients', 'recipes', 'options', 'photos']
+      .forEach(function (k) { write(k, k === 'settings' || k === 'templates' ? {} : []); });
+  }
+
+  return {
+    storageOk: storageOk,
+    list: list, saveList: saveList, upsert: upsert, remove: remove, find: find,
+    settings: settings, saveSettings: saveSettings,
+    templates: templates, saveTemplates: saveTemplates, DEFAULT_TEMPLATES: DEFAULT_TEMPLATES,
+    photoPut: photoPut, photoGet: photoGet, photoDel: photoDel,
+    exportAll: exportAll, importAll: importAll, clearAll: clearAll,
+    read: read, write: write
+  };
+})();
+
+/* ===== js/seed.js ===== */
+/* 처음 열었을 때 넣어주는 예시 데이터
+   (설정 화면에서 [전체 초기화] 후 [예시 데이터 넣기]로 다시 넣을 수 있어요) */
+window.Seed = (function () {
+
+  // 사장님이 직접 적는 메뉴별 원가표 (숫자는 예시이니 실제 값으로 바꿔주세요)
+  function menus() {
+    return [
+      { name: '기본 생크림케이크 1호', cost: 17000, price: 38000, memo: '' },
+      { name: '딸기케이크 1호',       cost: 21000, price: 48000, memo: '딸기 시세에 따라 변동' },
+      { name: '생화케이크',           cost: 34000, price: 88000, memo: '생화 세척·와이어 작업 포함' },
+      { name: '생화케이크 2단',       cost: 62000, price: 145000, memo: '' },
+      { name: '레터링케이크 1호',      cost: 19000, price: 42000, memo: '' }
+    ];
+  }
+
+  function ingredients() {
+    return [
+      { name: '무염버터',   packPrice: 12900, packQty: 1000, unit: 'g',  url: '', memo: '' },
+      { name: '박력분',     packPrice: 3200,  packQty: 1000, unit: 'g',  url: '' },
+      { name: '설탕',       packPrice: 2900,  packQty: 1000, unit: 'g',  url: '' },
+      { name: '계란',       packPrice: 7500,  packQty: 30,   unit: '개', url: '' },
+      { name: '생크림',     packPrice: 5800,  packQty: 500,  unit: 'ml', url: '' },
+      { name: '딸기',       packPrice: 12000, packQty: 500,  unit: 'g',  url: '' },
+      { name: '생화(장식용)', packPrice: 8000, packQty: 1,   unit: '세트', url: '' }
+    ];
+  }
+
+  function inventory() {
+    return [
+      { name: '1호 케이크 상자 (화이트)', category: '상자',       qty: 42, unit: '개', minQty: 20, unitPrice: 1200 },
+      { name: '2호 케이크 상자 (크라프트)', category: '상자',     qty: 15, unit: '개', minQty: 20, unitPrice: 1600 },
+      { name: '보냉백 (소)',            category: '보냉백',      qty: 30, unit: '개', minQty: 15, unitPrice: 900 },
+      { name: '보냉백 (대)',            category: '보냉백',      qty: 8,  unit: '개', minQty: 10, unitPrice: 1400 },
+      { name: '새틴 리본 (핑크)',        category: '리본',        qty: 3,  unit: '롤', minQty: 2,  unitPrice: 4500 },
+      { name: '숫자 초 세트',           category: '초·장식',     qty: 25, unit: '세트', minQty: 10, unitPrice: 800 },
+      { name: '케이크 받침 1호',        category: '받침·트레이',  qty: 60, unit: '개', minQty: 30, unitPrice: 400 },
+      { name: '아이스팩',              category: '기타',        qty: 55, unit: '개', minQty: 30, unitPrice: 300 }
+    ];
+  }
+
+  function options() {
+    return [
+      { keyword: '2단',  type: 'multiply', value: 1.8, memo: '2단은 재료·수고가 약 1.8배' },
+      { keyword: '3단',  type: 'multiply', value: 2.6, memo: '' },
+      { keyword: '2호',  type: 'multiply', value: 1.35, memo: '1호 기준 대비' },
+      { keyword: '3호',  type: 'multiply', value: 1.8, memo: '' },
+      { keyword: '생화',  type: 'add',      value: 8000, memo: '생화 장식 추가 비용' },
+      { keyword: '레터링', type: 'add',      value: 2000, memo: '문구 작업 추가' }
+    ];
+  }
+
+  // 레시피는 재료/재고 id 가 필요해서 저장 후에 만듭니다
+  function recipes(ingIds, invIds) {
+    return [
+      {
+        name: '기본 생크림케이크',
+        items: [
+          { ingId: ingIds['박력분'], qty: 180 },
+          { ingId: ingIds['설탕'], qty: 150 },
+          { ingId: ingIds['계란'], qty: 5 },
+          { ingId: ingIds['생크림'], qty: 400 },
+          { ingId: ingIds['무염버터'], qty: 60 }
+        ],
+        packItems: [
+          { invId: invIds['1호 케이크 상자 (화이트)'], qty: 1 },
+          { invId: invIds['케이크 받침 1호'], qty: 1 },
+          { invId: invIds['아이스팩'], qty: 1 }
+        ],
+        labor: '', memo: '1호 기준'
+      },
+      {
+        name: '딸기케이크',
+        items: [
+          { ingId: ingIds['박력분'], qty: 180 },
+          { ingId: ingIds['설탕'], qty: 150 },
+          { ingId: ingIds['계란'], qty: 5 },
+          { ingId: ingIds['생크림'], qty: 450 },
+          { ingId: ingIds['딸기'], qty: 300 }
+        ],
+        packItems: [
+          { invId: invIds['1호 케이크 상자 (화이트)'], qty: 1 },
+          { invId: invIds['케이크 받침 1호'], qty: 1 },
+          { invId: invIds['보냉백 (소)'], qty: 1 }
+        ],
+        labor: 10000, memo: '딸기 시즌 가격 변동 주의'
+      },
+      {
+        name: '생화케이크',
+        items: [
+          { ingId: ingIds['박력분'], qty: 180 },
+          { ingId: ingIds['설탕'], qty: 150 },
+          { ingId: ingIds['계란'], qty: 5 },
+          { ingId: ingIds['생크림'], qty: 400 },
+          { ingId: ingIds['생화(장식용)'], qty: 1 }
+        ],
+        packItems: [
+          { invId: invIds['2호 케이크 상자 (크라프트)'], qty: 1 },
+          { invId: invIds['케이크 받침 1호'], qty: 1 },
+          { invId: invIds['새틴 리본 (핑크)'], qty: 0.05 },
+          { invId: invIds['보냉백 (대)'], qty: 1 }
+        ],
+        labor: 15000, memo: '생화 세척·와이어 작업 포함'
+      }
+    ];
+  }
+
+  function orders() {
+    var t = U.today();
+    return [
+      { customerName: '김민지', phone: '010-1234-5678', pickupDate: U.addDays(t, 1), pickupTime: '14:00',
+        request: '생화케이크 2단', price: 145000, cost: 62000, deposit: 50000,
+        note: '핑크·화이트 톤, 리본 포함', source: 'manual', status: 'reserved', orderDate: t },
+      { customerName: '박서준', phone: '010-2222-3333', pickupDate: t, pickupTime: '11:00',
+        request: '딸기케이크 1호 / 레터링 "생일 축하해"', price: 48000, cost: 21000, deposit: 20000,
+        note: '견과류 알러지', source: 'paste', status: 'reserved', orderDate: U.addDays(t, -3) },
+      { customerName: '이하늘', phone: '010-9876-5432', pickupDate: U.addDays(t, -1), pickupTime: '16:30',
+        request: '기본 생크림케이크 1호', price: 38000, cost: 16500, deposit: 0,
+        note: '', source: 'manual', status: 'done', orderDate: U.addDays(t, -6) },
+      { customerName: '정유나', phone: '010-4444-5555', pickupDate: U.addDays(t, 5), pickupTime: '13:00',
+        request: '생화케이크 3호', price: 88000, cost: 39000, deposit: 30000,
+        note: '웨딩 촬영용', source: 'manual', status: 'reserved', orderDate: U.addDays(t, -1) }
+    ];
+  }
+
+  function install() {
+    var ingIds = {}, invIds = {};
+    menus().forEach(function (m) { DB.upsert('menus', m); });
+    ingredients().forEach(function (g) { ingIds[g.name] = DB.upsert('ingredients', g).id; });
+    inventory().forEach(function (i) { invIds[i.name] = DB.upsert('inventory', i).id; });
+    options().forEach(function (o) { DB.upsert('options', o); });
+    recipes(ingIds, invIds).forEach(function (r) { DB.upsert('recipes', r); });
+    orders().forEach(function (o) { DB.upsert('orders', o); });
+  }
+
+  // 처음 실행이면 예시 데이터를 자동으로 넣습니다
+  function installIfEmpty() {
+    if (DB.read('seeded', false)) return;
+    DB.write('seeded', true);
+    if (DB.list('menus').length || DB.list('orders').length) return;
+    install();
+  }
+
+  return { install: install, installIfEmpty: installIfEmpty };
+})();
+
+/* ===== js/costcalc.js ===== */
+/* 원가표 + 원가 계산
+   1순위: 사장님이 직접 적어둔 [메뉴별 원가표]
+   2순위: 원가표 이름 + 옵션 키워드(2단 ×1.8 등)
+   3순위: (선택) 재료 단가 + 레시피로 계산 */
+window.Cost = (function () {
+
+  /* ================= 계산 엔진 ================= */
+
+  // 띄어쓰기 제거 + 소문자 (이름 비교용)
+  function norm(s) { return String(s || '').replace(/\s+/g, '').toLowerCase(); }
+
+  // 재료 1단위(1g, 1ml, 1개)당 가격
+  function unitCost(ing) {
+    var qty = U.toNum(ing.packQty);
+    if (!qty) return 0;
+    return U.toNum(ing.packPrice) / qty;
+  }
+
+  // 원가로부터 추천 판매가 (설정의 마진율 기준, 1,000원 단위 올림)
+  function suggestPrice(cost) {
+    var margin = Math.min(95, Math.max(0, U.toNum(DB.settings().defaultMarginPct))) / 100;
+    if (margin >= 1) return Math.round(cost);
+    return Math.ceil((cost / (1 - margin)) / 1000) * 1000;
+  }
+
+  // 레시피 1개의 원가 계산 (재료 + 포장 + 인건비)
+  function recipeCost(recipe) {
+    var ings = DB.list('ingredients');
+    var inv = DB.list('inventory');
+    var set = DB.settings();
+    var lines = [], material = 0, packaging = 0;
+
+    (recipe.items || []).forEach(function (it) {
+      var ing = ings.find(function (x) { return x.id === it.ingId; });
+      if (!ing) return;
+      var cost = unitCost(ing) * U.toNum(it.qty);
+      material += cost;
+      lines.push({ kind: '재료', name: ing.name, qty: U.toNum(it.qty) + ing.unit, cost: cost });
+    });
+
+    (recipe.packItems || []).forEach(function (it) {
+      var item = inv.find(function (x) { return x.id === it.invId; });
+      if (!item) return;
+      var cost = U.toNum(item.unitPrice) * U.toNum(it.qty);
+      packaging += cost;
+      lines.push({ kind: '포장', name: item.name, qty: U.toNum(it.qty) + (item.unit || '개'), cost: cost });
+    });
+
+    var labor = recipe.labor === '' || recipe.labor === undefined || recipe.labor === null
+      ? U.toNum(set.laborPerCake) : U.toNum(recipe.labor);
+
+    return { lines: lines, material: material, packaging: packaging, labor: labor,
+             base: material + packaging + labor };
+  }
+
+  // 입력한 글에 들어있는 옵션 키워드 찾기
+  function matchOptions(n) {
+    var multiplier = 1, adds = [], applied = [];
+    DB.list('options').forEach(function (op) {
+      var k = norm(op.keyword);
+      if (!k || n.indexOf(k) < 0) return;
+      applied.push(op);
+      if (op.type === 'multiply') multiplier *= U.toNum(op.value) || 1;
+      else adds.push({ name: op.keyword, cost: U.toNum(op.value) });
+    });
+    return { multiplier: multiplier, adds: adds, applied: applied,
+             addSum: adds.reduce(function (a, b) { return a + b.cost; }, 0) };
+  }
+
+  // 이름이 들어있는 항목 중 가장 긴(=구체적인) 것 고르기
+  function bestMatch(listArr, n) {
+    var found = null;
+    listArr.forEach(function (x) {
+      var xn = norm(x.name);
+      if (xn && n.indexOf(xn) >= 0) {
+        if (!found || xn.length > norm(found.name).length) found = x;
+      }
+    });
+    return found;
+  }
+
+  /* 글로 적은 주문내용 -> 원가/판매가
+     예: "생화케이크 2단", "딸기케이크 1호 레터링" */
+  function calcFromText(text) {
+    var n = norm(text);
+    if (!n) return { ok: false, reason: '내용을 입력해 주세요.' };
+
+    var menus = DB.list('menus');
+
+    // 1순위 - 원가표에 이름이 똑같이 있으면 그 값을 그대로 사용
+    var exact = menus.find(function (m) { return norm(m.name) === n; });
+    if (exact) {
+      return {
+        ok: true, source: 'menu-exact', sourceLabel: '원가표에서 찾음',
+        name: exact.name, input: text,
+        total: Math.round(U.toNum(exact.cost)),
+        price: Math.round(U.toNum(exact.price)) || 0,
+        suggested: Math.round(U.toNum(exact.price)) || suggestPrice(U.toNum(exact.cost)),
+        multiplier: 1, adds: [], applied: [], lines: []
+      };
+    }
+
+    // 2순위 - 원가표 이름이 일부 들어있으면 + 옵션 키워드 적용
+    var menu = bestMatch(menus, n);
+    if (menu) {
+      var op = matchOptions(n);
+      var base = U.toNum(menu.cost);
+      var total = base * op.multiplier + op.addSum;
+      var basePrice = U.toNum(menu.price);
+      var suggested = basePrice
+        ? Math.ceil((basePrice * op.multiplier + op.addSum) / 1000) * 1000
+        : suggestPrice(total);
+      return {
+        ok: true, source: 'menu-option',
+        sourceLabel: op.applied.length ? '원가표 + 옵션 적용' : '원가표에서 찾음',
+        name: menu.name, input: text,
+        base: base, total: Math.round(total), price: 0, suggested: suggested,
+        multiplier: op.multiplier, adds: op.adds, applied: op.applied, lines: []
+      };
+    }
+
+    // 3순위 - 재료·레시피로 계산 (선택 기능)
+    var recipe = bestMatch(DB.list('recipes'), n);
+    if (recipe) {
+      var rc = recipeCost(recipe);
+      var op2 = matchOptions(n);
+      var total2 = rc.base * op2.multiplier + op2.addSum;
+      return {
+        ok: true, source: 'recipe', sourceLabel: '재료로 계산함',
+        name: recipe.name, input: text,
+        lines: rc.lines, material: rc.material, packaging: rc.packaging, labor: rc.labor,
+        base: rc.base, total: Math.round(total2), price: 0, suggested: suggestPrice(total2),
+        multiplier: op2.multiplier, adds: op2.adds, applied: op2.applied
+      };
+    }
+
+    return {
+      ok: false, unknown: true, input: text,
+      reason: '원가표에서 "' + text + '" 을(를) 찾지 못했어요.',
+      hint: '아래 [메뉴별 원가표]에 이 이름과 원가를 한 번만 적어두면 다음부터는 자동으로 계산됩니다.'
+    };
+  }
+
+  /* ================= 화면 ================= */
+
+  function render(view) {
+    view.innerHTML =
+      calcCard() +
+      menuCard() +
+      optionCard() +
+      advancedCard();
+    bind(view);
+    var last = DB.read('lastCalc', '');
+    if (last) { U.$('#calcInput').value = last; runCalc(); }
+  }
+
+  /* ---------- 계산기 ---------- */
+  function calcCard() {
+    return '' +
+    '<div class="card">' +
+      '<h2>🧮 원가 계산기</h2>' +
+      '<p class="hint">주문 내용을 그대로 적어보세요. 예) <code>생화케이크 2단</code>, <code>딸기케이크 1호</code></p>' +
+      '<div class="inline-field">' +
+        '<div><input id="calcInput" placeholder="생화케이크 2단" autocomplete="off"></div>' +
+        '<button class="btn" id="calcRun">계산</button>' +
+      '</div>' +
+      '<div id="calcResult"></div>' +
+    '</div>';
+  }
+
+  function runCalc() {
+    var text = U.$('#calcInput').value.trim();
+    DB.write('lastCalc', text);
+    var r = calcFromText(text);
+    var box = U.$('#calcResult');
+
+    if (!r.ok) {
+      box.innerHTML = '<div class="warn" style="margin-top:12px">' + U.esc(r.reason) +
+        (r.hint ? '<br>' + U.esc(r.hint) : '') + '</div>' +
+        (r.unknown ? '<div class="row" style="margin-top:10px">' +
+          '<button class="btn small" id="calcAddMenu">➕ "' + U.esc(text) + '" 원가표에 추가</button></div>' : '');
+      if (r.unknown) U.$('#calcAddMenu').onclick = function () { menuModal(null, text); };
+      return;
+    }
+
+    var profit = U.toNum(r.suggested) - U.toNum(r.total);
+    var rate = r.suggested ? Math.round(profit / r.suggested * 100) : 0;
+
+    var detail = '';
+    if (r.source === 'recipe') {
+      var rows = r.lines.map(function (l) {
+        return '<tr><td><span class="badge ' + (l.kind === '포장' ? 'gray' : '') + '">' + l.kind + '</span></td>' +
+          '<td>' + U.esc(l.name) + '</td><td class="num">' + U.esc(l.qty) + '</td>' +
+          '<td class="num">' + U.won(l.cost) + '</td></tr>';
+      }).join('');
+      rows += '<tr><td><span class="badge amber">인건비</span></td><td>작업 수고비</td><td class="num">-</td>' +
+              '<td class="num">' + U.won(r.labor) + '</td></tr>';
+      detail = '<div class="table-wrap"><table>' +
+        '<thead><tr><th>구분</th><th>항목</th><th class="num">사용량</th><th class="num">금액</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' + calcFooter(r) + '</table></div>';
+    } else if (r.source === 'menu-option' && (r.multiplier !== 1 || r.adds.length)) {
+      detail = '<div class="table-wrap"><table><tbody>' +
+        '<tr><td>원가표의 "' + U.esc(r.name) + '"</td><td class="num">' + U.won(r.base) + '</td></tr>' +
+        (r.multiplier !== 1 ? '<tr><td>옵션 배수 ×' + r.multiplier.toFixed(2) + '</td><td class="num">' + U.won(r.base * r.multiplier) + '</td></tr>' : '') +
+        r.adds.map(function (a) { return '<tr><td>추가: ' + U.esc(a.name) + '</td><td class="num">' + U.won(a.cost) + '</td></tr>'; }).join('') +
+        '</tbody><tfoot><tr><td>최종 원가</td><td class="num">' + U.won(r.total) + '</td></tr></tfoot></table></div>';
+    }
+
+    box.innerHTML = '' +
+      '<div class="divider"></div>' +
+      '<div class="grid four" style="margin-bottom:12px">' +
+        stat('찾은 메뉴', U.esc(r.name) + '<br><span class="badge ' + srcCls(r.source) + '">' + r.sourceLabel + '</span>', '') +
+        stat('원가', U.won(r.total), 'amber') +
+        stat(r.price ? '판매가' : '추천 판매가', U.won(r.suggested), 'rose') +
+        stat('이익', U.won(profit) + ' (' + rate + '%)', 'mint') +
+      '</div>' +
+      detail +
+      '<div class="row" style="margin-top:12px">' +
+        '<button class="btn ghost small" id="calcToOrder">이 내용으로 주문서 작성</button>' +
+        (r.source === 'recipe' ? '<button class="btn ghost small" id="calcSaveMenu">원가표에 저장해 두기</button>' : '') +
+      '</div>';
+
+    U.$('#calcToOrder').onclick = function () {
+      location.hash = '#orders';
+      setTimeout(function () {
+        var f = U.$('#orderForm'); if (!f) return;
+        f.request.value = r.input;
+        f.price.value = r.suggested;
+        f.cost.value = r.total;
+        f.customerName.focus();
+        U.toast('주문서에 옮겼어요');
+      }, 60);
+    };
+    var saveBtn = U.$('#calcSaveMenu');
+    if (saveBtn) saveBtn.onclick = function () { menuModal(null, r.input, r.total, r.suggested); };
+  }
+
+  function calcFooter(r) {
+    return '<tfoot>' +
+      '<tr><td colspan="3">기본 원가 합계</td><td class="num">' + U.won(r.base) + '</td></tr>' +
+      (r.multiplier !== 1 ? '<tr><td colspan="3">옵션 배수 ×' + r.multiplier.toFixed(2) + '</td><td class="num">' + U.won(r.base * r.multiplier) + '</td></tr>' : '') +
+      r.adds.map(function (a) { return '<tr><td colspan="3">추가: ' + U.esc(a.name) + '</td><td class="num">' + U.won(a.cost) + '</td></tr>'; }).join('') +
+      '<tr><td colspan="3">최종 원가</td><td class="num">' + U.won(r.total) + '</td></tr>' +
+    '</tfoot>';
+  }
+
+  function srcCls(src) {
+    return src === 'recipe' ? 'gray' : src === 'menu-option' ? 'amber' : 'mint';
+  }
+  function stat(label, value, cls) {
+    return '<div class="stat ' + cls + '"><div class="label">' + label + '</div>' +
+           '<div class="value" style="font-size:17px">' + value + '</div></div>';
+  }
+
+  /* ---------- 메뉴별 원가표 (직접 입력) ---------- */
+  function menuCard() {
+    var menus = DB.list('menus').slice().sort(function (a, b) {
+      return String(a.name).localeCompare(String(b.name));
+    });
+    var rows = menus.map(menuRow).join('');
+    var totalCost = menus.reduce(function (a, m) { return a + U.toNum(m.cost); }, 0);
+
+    return '' +
+    '<div class="card">' +
+      '<div class="row"><h2 style="margin:0">💰 메뉴별 원가표</h2><div class="spacer"></div>' +
+        '<button class="btn ghost small" id="menuCsv">CSV 저장</button>' +
+        '<button class="btn small" id="addMenu">+ 메뉴 추가</button></div>' +
+      '<p class="hint">사장님이 직접 원가를 적어두는 표입니다. 여기에 적어두면 계산기와 주문서의 ' +
+      '[자동계산]이 이 값을 사용합니다. <b>표 안의 숫자는 바로 고쳐 쓸 수 있어요.</b></p>' +
+      (menus.length
+        ? '<div class="table-wrap"><table>' +
+            '<thead><tr><th>메뉴 이름</th><th class="num">원가</th><th class="num">판매가</th>' +
+            '<th class="num">이익</th><th class="num">이익률</th><th>메모</th><th></th></tr></thead>' +
+            '<tbody id="menuBody">' + rows + '</tbody>' +
+            '<tfoot><tr><td>메뉴 ' + menus.length + '개</td><td class="num">평균 ' +
+              U.won(menus.length ? totalCost / menus.length : 0) + '</td><td colspan="5"></td></tr></tfoot>' +
+          '</table></div>'
+        : '<div class="empty">아직 등록된 메뉴가 없어요.<br>[+ 메뉴 추가]를 눌러 자주 만드는 케이크부터 적어보세요.</div>') +
+    '</div>';
+  }
+
+  function menuRow(m) {
+    var cost = U.toNum(m.cost), price = U.toNum(m.price);
+    var profit = price - cost;
+    var rate = price ? Math.round(profit / price * 100) : 0;
+    return '<tr data-menu="' + m.id + '">' +
+      '<td><input class="m-name" value="' + U.esc(m.name) + '" style="min-width:130px"></td>' +
+      '<td class="num"><input class="m-cost" type="number" min="0" step="any" style="width:100px" value="' + U.esc(m.cost) + '"></td>' +
+      '<td class="num"><input class="m-price" type="number" min="0" step="any" style="width:100px" value="' + U.esc(m.price) + '"></td>' +
+      '<td class="num m-profit" style="color:' + (profit >= 0 ? 'var(--mint)' : 'var(--red)') + '"><b>' + U.num(profit) + '</b></td>' +
+      '<td class="num m-rate">' + (price ? rate + '%' : '-') + '</td>' +
+      '<td><input class="m-memo" value="' + U.esc(m.memo || '') + '" style="min-width:110px"></td>' +
+      '<td class="num"><button class="icon-btn" data-del-menu="' + m.id + '">🗑️</button></td></tr>';
+  }
+
+  // 표에서 바로 고쳤을 때: 저장하고 이익 칸만 다시 그림 (화면 전체를 새로 그리지 않아 입력이 끊기지 않음)
+  function saveMenuRow(tr) {
+    var cost = U.toNum(U.$('.m-cost', tr).value);
+    var price = U.toNum(U.$('.m-price', tr).value);
+    DB.upsert('menus', {
+      id: tr.dataset.menu,
+      name: U.$('.m-name', tr).value.trim(),
+      cost: cost, price: price,
+      memo: U.$('.m-memo', tr).value.trim()
+    });
+    var profit = price - cost;
+    var rate = price ? Math.round(profit / price * 100) : 0;
+    var pc = U.$('.m-profit', tr);
+    pc.innerHTML = '<b>' + U.num(profit) + '</b>';
+    pc.style.color = profit >= 0 ? 'var(--mint)' : 'var(--red)';
+    U.$('.m-rate', tr).textContent = price ? rate + '%' : '-';
+    U.toast('저장했어요');
+  }
+
+  function menuModal(id, presetName, presetCost, presetPrice) {
+    var m = id ? DB.find('menus', id)
+               : { name: presetName || '', cost: presetCost || '', price: presetPrice || '', memo: '' };
+    var html = '' +
+      '<div class="field"><label>메뉴 이름 <span style="color:var(--rose)">*</span></label>' +
+        '<input id="mName" value="' + U.esc(m.name) + '" placeholder="예: 생화케이크 2단"></div>' +
+      '<div class="grid two">' +
+        '<div class="field"><label>원가 (재료·포장·수고비 합쳐서)</label>' +
+          '<input id="mCost" type="number" min="0" step="any" value="' + U.esc(m.cost) + '" placeholder="45000"></div>' +
+        '<div class="field"><label>판매가</label>' +
+          '<input id="mPrice" type="number" min="0" step="any" value="' + U.esc(m.price) + '" placeholder="145000"></div>' +
+      '</div>' +
+      '<div id="mPreview" class="info" style="margin-bottom:12px"></div>' +
+      '<div class="field"><label>메모</label><input id="mMemo" value="' + U.esc(m.memo || '') + '" placeholder="예: 생화 시세에 따라 변동"></div>' +
+      '<div class="row end"><button class="btn ghost" id="mCancel">취소</button><button class="btn" id="mSave">저장</button></div>';
+
+    U.modal(id ? '메뉴 수정' : '메뉴 추가', html, function (body) {
+      function preview() {
+        var c = U.toNum(U.$('#mCost', body).value), p = U.toNum(U.$('#mPrice', body).value);
+        if (!c) { U.$('#mPreview', body).textContent = '원가를 넣으면 이익이 계산됩니다.'; return; }
+        if (!p) {
+          U.$('#mPreview', body).textContent =
+            '판매가를 비워두면 마진율 ' + DB.settings().defaultMarginPct + '% 기준 ' + U.won(suggestPrice(c)) + ' 을 추천합니다.';
+          return;
+        }
+        U.$('#mPreview', body).textContent =
+          '이익 ' + U.won(p - c) + ' (이익률 ' + Math.round((p - c) / p * 100) + '%)';
+      }
+      preview();
+      U.$('#mCost', body).oninput = preview;
+      U.$('#mPrice', body).oninput = preview;
+      U.$('#mCancel', body).onclick = U.closeModal;
+      U.$('#mSave', body).onclick = function () {
+        var name = U.$('#mName', body).value.trim();
+        if (!name) { U.toast('메뉴 이름을 적어주세요'); return; }
+        DB.upsert('menus', {
+          id: m.id, name: name,
+          cost: U.toNum(U.$('#mCost', body).value),
+          price: U.toNum(U.$('#mPrice', body).value),
+          memo: U.$('#mMemo', body).value.trim()
+        });
+        U.closeModal(); U.toast('저장했어요'); App.render();
+      };
+    });
+  }
+
+  /* ---------- 옵션 키워드 ---------- */
+  function optionCard() {
+    var ops = DB.list('options');
+    var rows = ops.map(function (o) {
+      return '<tr><td><b>' + U.esc(o.keyword) + '</b></td>' +
+        '<td>' + (o.type === 'multiply' ? '<span class="badge">배수</span>' : '<span class="badge mint">추가금액</span>') + '</td>' +
+        '<td class="num">' + (o.type === 'multiply' ? '×' + o.value : U.won(o.value)) + '</td>' +
+        '<td>' + U.esc(o.memo || '') + '</td>' +
+        '<td class="num"><button class="icon-btn" data-del-opt="' + o.id + '">🗑️</button></td></tr>';
+    }).join('');
+    return '' +
+    '<div class="card">' +
+      '<div class="row"><h2 style="margin:0">🏷️ 옵션 키워드</h2><div class="spacer"></div>' +
+      '<button class="btn small" id="addOption">+ 옵션 추가</button></div>' +
+      '<p class="hint">원가표에 없는 조합이 들어와도 자동으로 계산되게 해줍니다. ' +
+      '예) 원가표에 <code>생화케이크</code>만 있어도 <code>생화케이크 2단</code>을 입력하면 원가를 1.8배로 계산합니다. ' +
+      '<b>원가표에 이름이 정확히 있으면 옵션은 적용되지 않습니다.</b></p>' +
+      (ops.length ? '<div class="table-wrap"><table><thead><tr><th>키워드</th><th>방식</th><th class="num">값</th><th>메모</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+        : '<div class="empty">등록된 옵션이 없어요.</div>') +
+    '</div>';
+  }
+
+  function optionModal() {
+    var html = '' +
+      '<div class="field"><label>키워드</label><input id="oKey" placeholder="예: 2단"></div>' +
+      '<div class="field"><label>방식</label><select id="oType">' +
+        '<option value="multiply">배수 (원가 × 값)</option><option value="add">추가금액 (원가 + 값)</option></select></div>' +
+      '<div class="field"><label>값</label><input id="oVal" type="number" step="any" placeholder="1.8 또는 8000"></div>' +
+      '<div class="field"><label>메모</label><input id="oMemo" placeholder="2단 케이크는 재료·수고가 약 1.8배"></div>' +
+      '<div class="row end"><button class="btn ghost" id="oCancel">취소</button><button class="btn" id="oSave">저장</button></div>';
+    U.modal('옵션 추가', html, function (body) {
+      U.$('#oCancel', body).onclick = U.closeModal;
+      U.$('#oSave', body).onclick = function () {
+        var k = U.$('#oKey', body).value.trim();
+        if (!k) { U.toast('키워드를 적어주세요'); return; }
+        DB.upsert('options', {
+          keyword: k, type: U.$('#oType', body).value,
+          value: U.toNum(U.$('#oVal', body).value), memo: U.$('#oMemo', body).value.trim()
+        });
+        U.closeModal(); U.toast('저장했어요'); App.render();
+      };
+    });
+  }
+
+  /* ---------- (선택) 재료로 계산하기 ---------- */
+  function advancedCard() {
+    return '' +
+    '<details class="card adv">' +
+      '<summary>🧈 재료로 계산하기 <span class="cap-sub">(선택 · 평소엔 안 쓰셔도 됩니다)</span></summary>' +
+      '<p class="hint" style="margin-top:12px">재료 단가와 레시피를 등록해 두면, 원가표에 없는 메뉴는 재료비로 계산해 줍니다. ' +
+      '원가를 처음 잡아볼 때나 재료값이 올랐을 때 확인용으로 쓰세요.</p>' +
+      recipeSection() +
+      ingredientSection() +
+    '</details>';
+  }
+
+  function recipeSection() {
+    var recipes = DB.list('recipes');
+    var rows = recipes.map(function (r) {
+      var c = recipeCost(r);
+      return '<tr><td><b>' + U.esc(r.name) + '</b>' + (r.memo ? '<br><span class="cap-sub">' + U.esc(r.memo) + '</span>' : '') + '</td>' +
+        '<td class="num">' + (r.items || []).length + '개</td>' +
+        '<td class="num">' + U.won(c.material) + '</td>' +
+        '<td class="num">' + U.won(c.packaging) + '</td>' +
+        '<td class="num">' + U.won(c.labor) + '</td>' +
+        '<td class="num"><b>' + U.won(c.base) + '</b></td>' +
+        '<td class="num"><button class="icon-btn" data-edit-recipe="' + r.id + '">✏️</button>' +
+        '<button class="icon-btn" data-del-recipe="' + r.id + '">🗑️</button></td></tr>';
+    }).join('');
+
+    return '<div class="divider"></div>' +
+      '<div class="row"><h3 style="margin:0">🍰 레시피</h3><div class="spacer"></div>' +
+      '<button class="btn ghost small" id="addRecipe">+ 레시피 추가</button></div>' +
+      (recipes.length ? '<div class="table-wrap"><table><thead><tr><th>이름</th><th class="num">재료수</th>' +
+        '<th class="num">재료비</th><th class="num">포장비</th><th class="num">인건비</th><th class="num">합계</th><th></th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table></div>'
+        : '<div class="empty">등록된 레시피가 없어요.</div>');
+  }
+
+  function ingredientSection() {
+    var ings = DB.list('ingredients');
+    var rows = ings.map(function (g) {
+      return '<tr data-ing="' + g.id + '">' +
+        '<td><input class="f-name" value="' + U.esc(g.name) + '" style="min-width:110px"></td>' +
+        '<td class="num"><input class="f-price" type="number" min="0" step="any" style="width:95px" value="' + U.esc(g.packPrice) + '"></td>' +
+        '<td class="num"><input class="f-qty" type="number" min="0" step="any" style="width:85px" value="' + U.esc(g.packQty) + '"></td>' +
+        '<td><input class="f-unit" style="width:60px" value="' + U.esc(g.unit) + '"></td>' +
+        '<td class="num"><b>' + U.won(unitCost(g)) + '</b> /' + U.esc(g.unit) + '</td>' +
+        '<td>' + (g.url ? '<a href="' + U.esc(g.url) + '" target="_blank" rel="noopener">구매처</a>' : '<span class="cap-sub">-</span>') + '</td>' +
+        '<td class="num"><button class="icon-btn" data-del-ing="' + g.id + '">🗑️</button></td></tr>';
+    }).join('');
+
+    return '<div class="divider"></div>' +
+      '<div class="row"><h3 style="margin:0">🧈 재료 단가</h3><div class="spacer"></div>' +
+      '<button class="btn ghost small" id="ingCsv">CSV 저장</button>' +
+      '<button class="btn ghost small" id="addIngredient">+ 재료 추가</button></div>' +
+      '<p class="hint">구매한 가격과 용량을 적으면 1g(또는 1개)당 단가를 자동으로 계산합니다.</p>' +
+      (ings.length ? '<div class="table-wrap"><table><thead><tr><th>재료명</th><th class="num">구매가</th>' +
+        '<th class="num">용량</th><th>단위</th><th class="num">단가</th><th>링크</th><th></th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table></div>'
+        : '<div class="empty">등록된 재료가 없어요.</div>');
+  }
+
+  function recipeModal(id) {
+    var r = id ? DB.find('recipes', id) : { name: '', items: [], packItems: [], labor: '', memo: '' };
+    var ings = DB.list('ingredients');
+    var inv = DB.list('inventory');
+
+    function ingRow(it) {
+      it = it || { ingId: '', qty: '' };
+      return '<div class="row ing-row" style="gap:6px;margin-bottom:6px">' +
+        '<select class="ing-sel" style="flex:2">' + '<option value="">재료 선택</option>' +
+          ings.map(function (g) { return '<option value="' + g.id + '"' + (g.id === it.ingId ? ' selected' : '') + '>' + U.esc(g.name) + ' (' + U.won(unitCost(g)) + '/' + U.esc(g.unit) + ')</option>'; }).join('') +
+        '</select>' +
+        '<input class="ing-qty" style="flex:1" type="number" min="0" step="any" placeholder="사용량" value="' + U.esc(it.qty) + '">' +
+        '<button class="icon-btn rm-row">🗑️</button></div>';
+    }
+    function packRow(it) {
+      it = it || { invId: '', qty: 1 };
+      return '<div class="row pack-row" style="gap:6px;margin-bottom:6px">' +
+        '<select class="pack-sel" style="flex:2"><option value="">포장자재 선택</option>' +
+          inv.map(function (g) { return '<option value="' + g.id + '"' + (g.id === it.invId ? ' selected' : '') + '>' + U.esc(g.name) + ' (' + U.won(g.unitPrice) + ')</option>'; }).join('') +
+        '</select>' +
+        '<input class="pack-qty" style="flex:1" type="number" min="0" step="any" placeholder="개수" value="' + U.esc(it.qty) + '">' +
+        '<button class="icon-btn rm-row">🗑️</button></div>';
+    }
+
+    var html = '' +
+      '<div class="field"><label>케이크 이름 <span style="color:var(--rose)">*</span></label>' +
+      '<input id="rName" value="' + U.esc(r.name) + '" placeholder="예: 생화케이크"></div>' +
+      '<div class="field"><label>들어가는 재료</label><div id="ingRows">' +
+        ((r.items || []).length ? r.items.map(ingRow).join('') : ingRow()) +
+      '</div><button class="btn ghost small" id="addIng">+ 재료 줄 추가</button></div>' +
+      '<div class="field"><label>포장 자재 (상자 · 리본 · 보냉백)</label><div id="packRows">' +
+        ((r.packItems || []).length ? r.packItems.map(packRow).join('') : packRow()) +
+      '</div><button class="btn ghost small" id="addPack">+ 포장 줄 추가</button></div>' +
+      '<div class="field"><label>인건비 (비워두면 설정값 ' + U.won(DB.settings().laborPerCake) + ' 사용)</label>' +
+      '<input id="rLabor" type="number" min="0" step="any" value="' + U.esc(r.labor) + '" placeholder="8000"></div>' +
+      '<div class="field"><label>메모</label><input id="rMemo" value="' + U.esc(r.memo || '') + '"></div>' +
+      '<div class="row end"><button class="btn ghost" id="rCancel">취소</button><button class="btn" id="rSave">저장</button></div>';
+
+    U.modal(id ? '레시피 수정' : '레시피 추가', html, function (body) {
+      body.addEventListener('click', function (e) {
+        if (e.target.classList.contains('rm-row')) e.target.closest('.row').remove();
+      });
+      U.$('#addIng', body).onclick = function () { U.$('#ingRows', body).insertAdjacentHTML('beforeend', ingRow()); };
+      U.$('#addPack', body).onclick = function () { U.$('#packRows', body).insertAdjacentHTML('beforeend', packRow()); };
+      U.$('#rCancel', body).onclick = U.closeModal;
+      U.$('#rSave', body).onclick = function () {
+        var name = U.$('#rName', body).value.trim();
+        if (!name) { U.toast('케이크 이름을 적어주세요'); return; }
+        var items = U.$$('.ing-row', body).map(function (row) {
+          return { ingId: U.$('.ing-sel', row).value, qty: U.toNum(U.$('.ing-qty', row).value) };
+        }).filter(function (x) { return x.ingId && x.qty > 0; });
+        var packItems = U.$$('.pack-row', body).map(function (row) {
+          return { invId: U.$('.pack-sel', row).value, qty: U.toNum(U.$('.pack-qty', row).value) };
+        }).filter(function (x) { return x.invId && x.qty > 0; });
+        DB.upsert('recipes', {
+          id: r.id, name: name, items: items, packItems: packItems,
+          labor: U.$('#rLabor', body).value, memo: U.$('#rMemo', body).value.trim()
+        });
+        U.closeModal(); U.toast('저장했어요'); App.render();
+      };
+    });
+  }
+
+  function ingredientModal(id) {
+    var g = id ? DB.find('ingredients', id) : { name: '', packPrice: '', packQty: '', unit: 'g', url: '' };
+    var html = '' +
+      '<div class="field"><label>재료명 <span style="color:var(--rose)">*</span></label><input id="gName" value="' + U.esc(g.name) + '" placeholder="예: 무염버터"></div>' +
+      '<div class="grid two">' +
+        '<div class="field"><label>구매 가격(원)</label><input id="gPrice" type="number" min="0" step="any" value="' + U.esc(g.packPrice) + '" placeholder="12900"></div>' +
+        '<div class="field"><label>구매 용량</label><input id="gQty" type="number" min="0" step="any" value="' + U.esc(g.packQty) + '" placeholder="1000"></div>' +
+      '</div>' +
+      '<div class="field"><label>단위 (g, ml, 개, 송이 …)</label><input id="gUnit" value="' + U.esc(g.unit) + '"></div>' +
+      '<div class="field"><label>구매처 링크 (선택)</label><input id="gUrl" value="' + U.esc(g.url || '') + '" placeholder="https://"></div>' +
+      '<div class="row end"><button class="btn ghost" id="gCancel">취소</button><button class="btn" id="gSave">저장</button></div>';
+    U.modal(id ? '재료 수정' : '재료 추가', html, function (body) {
+      U.$('#gCancel', body).onclick = U.closeModal;
+      U.$('#gSave', body).onclick = function () {
+        var name = U.$('#gName', body).value.trim();
+        if (!name) { U.toast('재료명을 적어주세요'); return; }
+        DB.upsert('ingredients', {
+          id: g.id, name: name,
+          packPrice: U.toNum(U.$('#gPrice', body).value),
+          packQty: U.toNum(U.$('#gQty', body).value),
+          unit: U.$('#gUnit', body).value.trim() || 'g',
+          url: U.$('#gUrl', body).value.trim(),
+          priceCheckedAt: U.today()
+        });
+        U.closeModal(); U.toast('저장했어요'); App.render();
+      };
+    });
+  }
+
+  /* ---------- 이벤트 연결 ---------- */
+  function bind(view) {
+    U.$('#calcRun', view).onclick = runCalc;
+    U.$('#calcInput', view).addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') runCalc();
+    });
+    U.$('#addMenu', view).onclick = function () { menuModal(null); };
+    U.$('#addOption', view).onclick = optionModal;
+    U.$('#addRecipe', view).onclick = function () { recipeModal(null); };
+    U.$('#addIngredient', view).onclick = function () { ingredientModal(null); };
+
+    U.$('#menuCsv', view).onclick = function () {
+      var rows = [['메뉴 이름', '원가', '판매가', '이익', '이익률(%)', '메모']];
+      DB.list('menus').forEach(function (m) {
+        var c = U.toNum(m.cost), p = U.toNum(m.price);
+        rows.push([m.name, c, p, p - c, p ? Math.round((p - c) / p * 100) : '', m.memo || '']);
+      });
+      U.downloadCsv('메뉴별_원가표.csv', rows);
+      U.toast('CSV 파일을 저장했어요');
+    };
+    U.$('#ingCsv', view).onclick = function () {
+      var rows = [['재료명', '구매가', '용량', '단위', '단가', '구매처']];
+      DB.list('ingredients').forEach(function (g) {
+        rows.push([g.name, g.packPrice, g.packQty, g.unit, Math.round(unitCost(g)), g.url || '']);
+      });
+      U.downloadCsv('재료단가.csv', rows);
+    };
+
+    view.addEventListener('click', function (e) {
+      var t = e.target;
+      if (t.dataset.delMenu && U.confirmBox('이 메뉴를 원가표에서 지울까요?')) {
+        DB.remove('menus', t.dataset.delMenu); App.render();
+      }
+      if (t.dataset.editRecipe) recipeModal(t.dataset.editRecipe);
+      if (t.dataset.delRecipe && U.confirmBox('이 레시피를 삭제할까요?')) {
+        DB.remove('recipes', t.dataset.delRecipe); App.render();
+      }
+      if (t.dataset.delIng && U.confirmBox('이 재료를 삭제할까요?')) {
+        DB.remove('ingredients', t.dataset.delIng); App.render();
+      }
+      if (t.dataset.delOpt && U.confirmBox('이 옵션을 삭제할까요?')) {
+        DB.remove('options', t.dataset.delOpt); App.render();
+      }
+    });
+
+    // 표에서 바로 수정
+    view.addEventListener('change', function (e) {
+      var menuTr = e.target.closest('tr[data-menu]');
+      if (menuTr) { saveMenuRow(menuTr); return; }
+
+      var ingTr = e.target.closest('tr[data-ing]');
+      if (ingTr) {
+        DB.upsert('ingredients', {
+          id: ingTr.dataset.ing,
+          name: U.$('.f-name', ingTr).value.trim(),
+          packPrice: U.toNum(U.$('.f-price', ingTr).value),
+          packQty: U.toNum(U.$('.f-qty', ingTr).value),
+          unit: U.$('.f-unit', ingTr).value.trim() || 'g'
+        });
+        U.toast('저장했어요'); App.render();
+      }
+    });
+  }
+
+  return {
+    render: render, calcFromText: calcFromText, recipeCost: recipeCost,
+    unitCost: unitCost, suggestPrice: suggestPrice
+  };
+})();
+
+/* ===== js/orders.js ===== */
+/* 주문 등록 + 픽업 달력 */
+window.Orders = (function () {
+
+  var calMonth = U.thisMonth();   // 달력에 보이는 달
+  var editingId = null;           // 수정 중인 주문
+
+  /* ---------- 주문 목록 도우미 ---------- */
+  function all() {
+    return DB.list('orders').slice().sort(function (a, b) {
+      return (a.pickupDate + (a.pickupTime || '')).localeCompare(b.pickupDate + (b.pickupTime || ''));
+    });
+  }
+  function byDate(date) { return all().filter(function (o) { return o.pickupDate === date; }); }
+  function byMonth(m) { return all().filter(function (o) { return (o.pickupDate || '').slice(0, 7) === m; }); }
+
+  /* ================= 화면 ================= */
+  function render(view) {
+    view.innerHTML = formCard() + calendarCard() + upcomingCard();
+    bind(view);
+  }
+
+  function formCard() {
+    var set = DB.settings();
+    return '' +
+    '<div class="card">' +
+      '<div class="row"><h2 style="margin:0">📝 주문서 작성</h2><div class="spacer"></div>' +
+        '<button class="btn ghost small" id="pasteImport">💬 채팅 내용으로 주문 만들기</button>' +
+      '</div>' +
+      '<p class="hint">별표(<span style="color:var(--rose)">*</span>) 항목만 필수입니다. 저장하면 아래 달력의 픽업 날짜에 자동으로 표시돼요.</p>' +
+      '<form id="orderForm" novalidate>' +
+        '<input type="hidden" name="oid">' +
+        '<div class="grid two">' +
+          '<div class="field"><label>고객이름 <span style="color:var(--rose)">*</span></label>' +
+            '<input name="customerName" required placeholder="김민지" autocomplete="off"></div>' +
+          '<div class="field"><label>연락처</label>' +
+            '<input name="phone" placeholder="010-1234-5678" inputmode="numeric" autocomplete="off"></div>' +
+          '<div class="field"><label>픽업날짜 <span style="color:var(--rose)">*</span></label>' +
+            '<input name="pickupDate" type="date" required value="' + U.today() + '"></div>' +
+          '<div class="field"><label>픽업시간</label>' +
+            '<input name="pickupTime" type="time" value="14:00"></div>' +
+        '</div>' +
+        '<div class="field"><label>주문요청사항</label>' +
+          '<textarea name="request" placeholder="예: 생화케이크 2단 / 문구 &quot;생일 축하해&quot; / 핑크톤"></textarea></div>' +
+        '<div class="grid three">' +
+          '<div class="field"><label>가격 (판매가)</label>' +
+            '<input name="price" type="number" min="0" step="any" placeholder="65000"></div>' +
+          '<div class="field"><label>원가 <button type="button" class="btn ghost small" id="autoCost" style="padding:2px 8px;font-size:11px">자동계산</button></label>' +
+            '<input name="cost" type="number" min="0" step="any" placeholder="24000"></div>' +
+          '<div class="field"><label>예약금 (받은 돈)</label>' +
+            '<input name="deposit" type="number" min="0" step="any" placeholder="20000"></div>' +
+        '</div>' +
+        '<div class="field"><label>참고사항</label>' +
+          '<textarea name="note" placeholder="예: 알러지 - 견과류 제외 / 주차 문의"></textarea></div>' +
+        '<div class="grid two">' +
+          '<div class="field"><label>주문 경로</label><select name="source">' +
+            '<option value="manual"' + (set.reservationSource === 'manual' ? ' selected' : '') + '>직접 입력</option>' +
+            '<option value="paste"' + (set.reservationSource === 'paste' ? ' selected' : '') + '>채팅 붙여넣기</option>' +
+            '<option value="phone">전화</option><option value="instagram">인스타그램</option>' +
+          '</select></div>' +
+          '<div class="field"><label>상태</label><select name="status">' +
+            '<option value="reserved">예약</option><option value="done">픽업 완료</option><option value="canceled">취소</option>' +
+          '</select></div>' +
+        '</div>' +
+        '<div class="row end">' +
+          '<button type="button" class="btn ghost" id="formReset">새로 작성</button>' +
+          '<button type="submit" class="btn" id="formSubmit">주문 저장</button>' +
+        '</div>' +
+      '</form>' +
+    '</div>';
+  }
+
+  /* ---------- 달력 ---------- */
+  function calendarCard() {
+    return '<div class="card">' +
+      '<div class="cal-head">' +
+        '<button class="btn ghost small" id="calPrev">‹ 이전달</button>' +
+        '<div class="cal-title" id="calTitle">' + U.monthTitle(calMonth) + '</div>' +
+        '<button class="btn ghost small" id="calNext">다음달 ›</button>' +
+      '</div>' +
+      '<div id="calBody">' + calendarGrid() + '</div>' +
+      '<p class="hint" style="margin-top:10px">날짜를 누르면 그날의 주문을 자세히 볼 수 있어요.</p>' +
+    '</div>';
+  }
+
+  function calendarGrid() {
+    var p = calMonth.split('-'), y = +p[0], m = +p[1];
+    var first = new Date(y, m - 1, 1);
+    var startDow = first.getDay();
+    var days = U.lastDayOfMonth(calMonth);
+    var today = U.today();
+    var html = U.DOW.map(function (d, i) {
+      return '<div class="dow' + (i === 0 ? ' sun' : '') + '">' + d + '</div>';
+    }).join('');
+
+    for (var i = 0; i < startDow; i++) html += '<div class="day empty"></div>';
+
+    for (var d = 1; d <= days; d++) {
+      var date = calMonth + '-' + U.pad(d);
+      var list = byDate(date).filter(function (o) { return o.status !== 'canceled'; });
+      var dow = new Date(y, m - 1, d).getDay();
+      var cls = 'day' + (dow === 0 ? ' sun' : '') + (date === today ? ' today' : '');
+      var evs = list.slice(0, 3).map(function (o) {
+        return '<div class="ev' + (o.status === 'done' ? ' done' : '') + '">' +
+          (o.pickupTime ? U.esc(o.pickupTime) + ' ' : '') + U.esc(o.customerName) + '</div>';
+      }).join('');
+      var more = list.length > 3 ? '<div class="more">+' + (list.length - 3) + '건 더</div>' : '';
+      html += '<div class="' + cls + '" data-date="' + date + '"><div class="dnum">' + d + '</div>' + evs + more + '</div>';
+    }
+    return '<div class="cal">' + html + '</div>';
+  }
+
+  function dayModal(date) {
+    var list = byDate(date);
+    var body = list.length ? list.map(function (o) {
+      return '<div class="q-item">' +
+        '<div class="row"><b>' + U.esc(o.customerName) + '</b>' +
+        '<span class="badge ' + statusCls(o.status) + '">' + statusText(o.status) + '</span>' +
+        '<div class="spacer"></div>' +
+        '<span class="cap-sub">' + U.esc(o.pickupTime || '') + '</span></div>' +
+        (o.phone ? '<div class="cap-sub">📞 ' + U.esc(U.phone(o.phone)) + '</div>' : '') +
+        (o.request ? '<div style="margin-top:6px;white-space:pre-wrap">' + U.esc(o.request) + '</div>' : '') +
+        (o.note ? '<div class="cap-sub" style="margin-top:4px">📌 ' + U.esc(o.note) + '</div>' : '') +
+        '<div class="row" style="margin-top:8px">' +
+          '<span class="badge gray">판매 ' + U.won(o.price) + '</span>' +
+          '<span class="badge gray">원가 ' + U.won(o.cost) + '</span>' +
+          '<span class="badge mint">이익 ' + U.won(U.toNum(o.price) - U.toNum(o.cost)) + '</span>' +
+        '</div>' +
+        '<div class="row" style="margin-top:8px">' +
+          '<button class="btn ghost small" data-edit-order="' + o.id + '">수정</button>' +
+          (o.status !== 'done' ? '<button class="btn mint small" data-done-order="' + o.id + '">픽업 완료</button>' : '') +
+          '<button class="btn danger small" data-del-order="' + o.id + '">삭제</button>' +
+        '</div></div>';
+    }).join('') : '<div class="empty">이 날짜에는 주문이 없어요.</div>';
+
+    U.modal(U.korDateFull(date) + ' 주문 ' + list.length + '건', body, function (m) {
+      m.addEventListener('click', function (e) {
+        var t = e.target;
+        if (t.dataset.editOrder) { U.closeModal(); loadToForm(t.dataset.editOrder); }
+        if (t.dataset.doneOrder) { DB.upsert('orders', { id: t.dataset.doneOrder, status: 'done' }); U.closeModal(); U.toast('픽업 완료로 바꿨어요'); App.render(); }
+        if (t.dataset.delOrder && U.confirmBox('이 주문을 삭제할까요?')) { DB.remove('orders', t.dataset.delOrder); U.closeModal(); U.toast('삭제했어요'); App.render(); }
+      });
+    });
+  }
+
+  function statusText(s) { return s === 'done' ? '픽업완료' : s === 'canceled' ? '취소' : '예약'; }
+  function statusCls(s) { return s === 'done' ? 'mint' : s === 'canceled' ? 'red' : ''; }
+
+  /* ---------- 다가오는 픽업 ---------- */
+  function upcomingCard() {
+    var today = U.today();
+    var list = all().filter(function (o) {
+      return o.status === 'reserved' && o.pickupDate >= today;
+    }).slice(0, 8);
+    if (!list.length) return '<div class="card"><h2>📅 다가오는 픽업</h2><div class="empty">예정된 픽업이 없어요.</div></div>';
+    var rows = list.map(function (o) {
+      var dday = U.diffDays(today, o.pickupDate);
+      return '<tr><td>' + U.korDate(o.pickupDate) + ' ' + U.esc(o.pickupTime || '') +
+        ' <span class="badge">' + (dday === 0 ? '오늘' : dday === 1 ? '내일' : 'D-' + dday) + '</span></td>' +
+        '<td>' + U.esc(o.customerName) + '</td>' +
+        '<td>' + U.esc((o.request || '').slice(0, 30)) + '</td>' +
+        '<td class="num">' + U.won(o.price) + '</td>' +
+        '<td class="num"><button class="icon-btn" data-edit-order="' + o.id + '">✏️</button></td></tr>';
+    }).join('');
+    return '<div class="card"><h2>📅 다가오는 픽업</h2><div class="table-wrap"><table>' +
+      '<thead><tr><th>픽업</th><th>고객</th><th>주문내용</th><th class="num">가격</th><th></th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div></div>';
+  }
+
+  /* ---------- 폼 처리 ---------- */
+  function loadToForm(id) {
+    var o = DB.find('orders', id); if (!o) return;
+    editingId = id;
+    var f = U.$('#orderForm');
+    f.oid.value = o.id;
+    f.customerName.value = o.customerName || '';
+    f.phone.value = o.phone || '';
+    f.pickupDate.value = o.pickupDate || '';
+    f.pickupTime.value = o.pickupTime || '';
+    f.request.value = o.request || '';
+    f.price.value = o.price || '';
+    f.cost.value = o.cost || '';
+    f.deposit.value = o.deposit || '';
+    f.note.value = o.note || '';
+    f.source.value = o.source || 'manual';
+    f.status.value = o.status || 'reserved';
+    U.$('#formSubmit').textContent = '수정 저장';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    U.toast('주문을 불러왔어요');
+  }
+
+  function resetForm() {
+    editingId = null;
+    var f = U.$('#orderForm');
+    f.reset();
+    f.oid.value = '';
+    f.pickupDate.value = U.today();
+    f.pickupTime.value = '14:00';
+    U.$('#formSubmit').textContent = '주문 저장';
+  }
+
+  function saveForm(e) {
+    e.preventDefault();
+    var f = e.target;
+    var name = f.customerName.value.trim();
+    if (!name) { U.toast('고객이름을 적어주세요'); return; }
+    if (!f.pickupDate.value) { U.toast('픽업날짜를 골라주세요'); return; }
+
+    var isNew = !f.oid.value;
+    var saved = DB.upsert('orders', {
+      id: f.oid.value || undefined,
+      customerName: name,
+      phone: U.phone(f.phone.value.trim()),
+      pickupDate: f.pickupDate.value,
+      pickupTime: f.pickupTime.value,
+      request: f.request.value.trim(),
+      price: U.toNum(f.price.value),
+      cost: U.toNum(f.cost.value),
+      deposit: U.toNum(f.deposit.value),
+      note: f.note.value.trim(),
+      source: f.source.value,
+      status: f.status.value,
+      orderDate: f.oid.value ? undefined : U.today()
+    });
+    calMonth = saved.pickupDate.slice(0, 7);
+    resetForm();
+    U.toast(isNew ? '주문을 저장했어요 🎂' : '수정했어요');
+    App.render();
+  }
+
+  /* ---------- 채팅 내용으로 주문 만들기 ---------- */
+
+  // 서식 예시 (사장님이 고객에게 보내거나, 메모할 때 쓰는 양식)
+  var FORM_SAMPLE =
+    '고객이름: \n연락처: \n픽업날짜: \n픽업시간: \n주문요청사항: \n가격: \n참고사항: ';
+
+  function pasteModal() {
+    var html = '' +
+      '<p class="hint">카톡·문자·메모에 적힌 예약 내용을 <b>그대로 복사해서 아래에 붙여넣으면</b> 주문 목록으로 만들어 드립니다. ' +
+      '등록하기 전에 내용을 고칠 수 있어요.</p>' +
+      '<div class="info">✅ <b>서식대로 적은 글</b>(고객이름: / 연락처: / 픽업날짜: …)은 정확하게 읽습니다.<br>' +
+      '✅ <b>카톡 대화를 그대로</b> 붙여넣어도 이름·전화번호·날짜·금액을 최대한 찾아냅니다.</div>' +
+      '<div class="row" style="margin:10px 0">' +
+        '<button class="btn ghost small" id="pvCopyForm">📋 서식 복사</button>' +
+        '<button class="btn ghost small" id="pvSample">예시 넣어보기</button>' +
+      '</div>' +
+      '<div class="field"><label>붙여넣기</label>' +
+      '<textarea id="pvText" style="min-height:150px" placeholder="고객이름: 김민지&#10;연락처: 010-1234-5678&#10;픽업날짜: 2026-08-11&#10;주문요청사항: 생화케이크 2단&#10;가격: 145000"></textarea></div>' +
+      '<div class="row"><button class="btn" id="pvParse">내용 읽기</button>' +
+      '<span class="cap-sub">여러 건이면 이어서 붙여넣으세요</span></div>' +
+      '<div id="pvPreview"></div>';
+
+    U.modal('💬 채팅 내용으로 주문 만들기', html, function (body) {
+      U.$('#pvCopyForm', body).onclick = function () { U.copyText(FORM_SAMPLE); };
+      U.$('#pvSample', body).onclick = function () {
+        U.$('#pvText', body).value =
+          '고객이름: 김민지\n연락처: 010-1234-5678\n픽업날짜: ' + U.addDays(U.today(), 7) +
+          '\n픽업시간: 14:00\n주문요청사항: 생화케이크 2단\n가격: 145000\n참고사항: 핑크톤\n\n' +
+          '고객이름: 박서준\n연락처: 010-2222-3333\n픽업날짜: ' + U.addDays(U.today(), 9) +
+          '\n주문요청사항: 딸기케이크 1호\n가격: 48000';
+      };
+      U.$('#pvParse', body).onclick = function () { showPreview(body); };
+    });
+  }
+
+  function showPreview(body) {
+    var rows = parseReservations(U.$('#pvText', body).value);
+    var box = U.$('#pvPreview', body);
+    if (!rows.length) {
+      box.innerHTML = '<div class="warn" style="margin-top:12px">읽을 수 있는 예약을 찾지 못했어요.<br>' +
+        '최소한 <b>이름과 픽업날짜</b>는 들어 있어야 합니다. [📋 서식 복사]를 눌러 그 모양대로 적어보세요.</div>';
+      return;
+    }
+
+    var existing = DB.list('orders');
+    box.innerHTML = '<div class="divider"></div>' +
+      '<p class="hint">' + rows.length + '건을 찾았어요. 확인하고 고친 뒤 등록하세요.</p>' +
+      rows.map(function (r, i) {
+        var dup = existing.some(function (o) {
+          return o.customerName === r.customerName && o.pickupDate === r.pickupDate;
+        });
+        var c = Cost.calcFromText(r.request);
+        var cost = c.ok ? Math.round(c.total / 10) * 10 : 0;
+        if (!r.price && c.ok) r.price = c.suggested;
+        return '<div class="q-item pv-row" data-i="' + i + '">' +
+          '<div class="row" style="margin-bottom:8px">' +
+            '<label style="margin:0"><input type="checkbox" class="pv-chk" style="width:auto"' +
+              (dup ? '' : ' checked') + '> 등록</label>' +
+            '<div class="spacer"></div>' +
+            (dup ? '<span class="badge red">이미 등록된 예약</span>'
+                 : (c.ok ? '<span class="badge mint">원가 자동입력됨</span>' : '')) +
+          '</div>' +
+          '<div class="grid two pv-grid">' +
+            '<div class="field"><label>고객이름</label><input class="pv-name" value="' + U.esc(r.customerName) + '"></div>' +
+            '<div class="field"><label>연락처</label><input class="pv-phone" value="' + U.esc(r.phone) + '"></div>' +
+            '<div class="field"><label>픽업날짜</label><input class="pv-date" type="date" value="' + U.esc(r.pickupDate) + '"></div>' +
+            '<div class="field"><label>픽업시간</label><input class="pv-time" type="time" value="' + U.esc(r.pickupTime) + '"></div>' +
+          '</div>' +
+          '<div class="field"><label>주문요청사항</label><input class="pv-req" value="' + U.esc(r.request) + '"></div>' +
+          '<div class="grid two pv-grid">' +
+            '<div class="field"><label>가격</label><input class="pv-price" type="number" step="any" value="' + U.esc(r.price || '') + '"></div>' +
+            '<div class="field"><label>원가</label><input class="pv-cost" type="number" step="any" value="' + U.esc(cost || '') + '"></div>' +
+          '</div>' +
+          '<div class="field" style="margin:0"><label>참고사항</label><input class="pv-note" value="' + U.esc(r.note || '') + '"></div>' +
+        '</div>';
+      }).join('') +
+      '<div class="row end" style="margin-top:12px"><button class="btn" id="pvSave">선택한 주문 등록</button></div>';
+
+    U.$('#pvSave', body).onclick = function () {
+      var n = 0;
+      U.$$('.pv-row', body).forEach(function (row) {
+        if (!U.$('.pv-chk', row).checked) return;
+        var name = U.$('.pv-name', row).value.trim();
+        var date = U.$('.pv-date', row).value;
+        if (!name || !date) return;
+        DB.upsert('orders', {
+          customerName: name,
+          phone: U.phone(U.$('.pv-phone', row).value.trim()),
+          pickupDate: date,
+          pickupTime: U.$('.pv-time', row).value || '14:00',
+          request: U.$('.pv-req', row).value.trim(),
+          price: U.toNum(U.$('.pv-price', row).value),
+          cost: U.toNum(U.$('.pv-cost', row).value),
+          note: U.$('.pv-note', row).value.trim(),
+          deposit: 0, source: 'paste', status: 'reserved', orderDate: U.today()
+        });
+        n++;
+      });
+      U.closeModal();
+      U.toast(n ? n + '건 등록했어요 🎂' : '등록된 주문이 없어요');
+      App.render();
+    };
+  }
+
+  /* ---------- 붙여넣은 글 읽기 ---------- */
+
+  // 서식에서 쓰는 이름표들 (사장님이 조금 다르게 적어도 알아듣도록)
+  var LABELS = [
+    { key: 'customerName', words: ['고객이름', '고객명', '예약자', '성함', '이름'] },
+    { key: 'phone',        words: ['연락처', '전화번호', '핸드폰', '휴대폰', '전화', '번호'] },
+    { key: 'pickupDate',   words: ['픽업날짜', '픽업일자', '픽업일', '수령일', '픽업', '날짜'] },
+    { key: 'pickupTime',   words: ['픽업시간', '수령시간', '시간'] },
+    { key: 'request',      words: ['주문요청사항', '주문내용', '요청사항', '주문', '요청', '메뉴', '내용'] },
+    { key: 'price',        words: ['판매가', '결제금액', '가격', '금액'] },
+    { key: 'note',         words: ['참고사항', '특이사항', '참고', '비고', '메모'] }
+  ];
+  // 긴 단어부터 찾아야 "픽업날짜"가 "픽업"으로 잘리지 않음
+  var LABEL_WORDS = LABELS.reduce(function (a, l) { return a.concat(l.words); }, [])
+    .sort(function (a, b) { return b.length - a.length; });
+  var LABEL_RE = new RegExp('(' + LABEL_WORDS.join('|') + ')\\s*[:：]', 'g');
+  // 콜론 없이 "이름 김민지 / 전화 010-…" 처럼 적은 경우용
+  var LABEL_RE_LOOSE = new RegExp('(?:^|[\\s/|,\\-])(' + LABEL_WORDS.join('|') + ')\\s*[:：]?[ \\t]+', 'g');
+  function labelKey(word) {
+    var f = LABELS.find(function (l) { return l.words.indexOf(word) >= 0; });
+    return f ? f.key : null;
+  }
+
+  function parseReservations(text) {
+    var raw = String(text || '');
+    if (!raw.trim()) return [];
+    // 1) "고객이름: 김민지" 처럼 콜론이 있는 서식
+    var labeled = parseLabeled(raw, LABEL_RE);
+    if (labeled.length) return labeled;
+    // 2) "이름 김민지 / 전화 010-..." 처럼 콜론 없이 적은 서식
+    //    (이름표가 3종류 이상 나올 때만 서식으로 인정 - 일반 대화를 오해하지 않도록)
+    var loose = parseLabeled(raw, LABEL_RE_LOOSE, 3);
+    if (loose.length) return loose;
+    var byLine = parseFree(raw, true);
+    if (byLine.length) return byLine;
+    return parseFree(raw, false);   // 줄마다 못 찾으면 전체를 한 건으로
+  }
+
+  /* 방식 A - "고객이름: 김민지" 처럼 이름표가 있는 글 */
+  function parseLabeled(text, re, minKinds) {
+    re.lastIndex = 0;
+    var marks = [], kinds = {}, m;
+    while ((m = re.exec(text)) !== null) {
+      var key = labelKey(m[1]);
+      if (!key) continue;
+      kinds[key] = true;
+      marks.push({ key: key, start: m.index, valueFrom: m.index + m[0].length });
+    }
+    if (!marks.length) return [];
+    if (minKinds && Object.keys(kinds).length < minKinds) return [];
+
+    var out = [], cur = null;
+    marks.forEach(function (mk, i) {
+      var end = i + 1 < marks.length ? marks[i + 1].start : text.length;
+      var value = text.slice(mk.valueFrom, end)
+        .replace(/^[\s\-|/,]+/, '').replace(/[\s\-|/,]+$/, '').trim();
+      // 이미 채운 항목이 또 나오면 다음 사람 주문으로 봄
+      if (!cur || cur[mk.key] !== undefined) {
+        if (cur) out.push(cur);
+        cur = {};
+      }
+      cur[mk.key] = value;
+    });
+    if (cur) out.push(cur);
+
+    return out.map(normalize).filter(function (r) {
+      return r.customerName && r.customerName !== '이름없음';
+    });
+  }
+
+  /* 방식 B - 카톡 대화처럼 자유롭게 적힌 글 */
+  function parseFree(text, perLine) {
+    var chunks = perLine ? String(text).split(/\r?\n/) : [String(text)];
+    var out = [];
+    var speaker = '';
+
+    chunks.forEach(function (chunk) {
+      var s = String(chunk).replace(/\t/g, ' ');
+      if (!s.trim()) return;
+
+      // 카톡 내보내기 형식의 말머리 제거
+      var k1 = s.match(/^\[([^\]]{1,20})\]\s*\[[^\]]{1,20}\]\s*/);
+      if (k1) { speaker = k1[1]; s = s.slice(k1[0].length); }
+      var k2 = s.match(/^\d{4}년\s*\d{1,2}월\s*\d{1,2}일\s*(오전|오후)\s*\d{1,2}:\d{2},\s*([^:]{1,20}):\s*/);
+      if (k2) { speaker = k2[2].trim(); s = s.slice(k2[0].length); }
+
+      var pm = s.match(/01[016789][-.\s]?\d{3,4}[-.\s]?\d{4}/);
+      var date = findDate(s);
+      if (!pm && !date) return;
+
+      var mm = s.match(/([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{4,7})\s*원/);
+      var price = mm ? U.toNum(mm[1]) : 0;
+
+      var rest = s;
+      [pm && pm[0], mm && mm[0]].forEach(function (x) { if (x) rest = rest.replace(x, ' '); });
+      var time = findTime(rest);
+      rest = stripDateTime(rest);
+
+      // 카톡 말머리가 있으면 그 사람이 곧 고객
+      var name = speaker || pickName(rest);
+      var request = cleanRequest(rest, name);
+
+      out.push(normalize({
+        customerName: name, phone: pm ? pm[0] : '', pickupDate: date,
+        pickupTime: time, request: request, price: price
+      }));
+    });
+
+    return out.filter(function (r) { return r.customerName && r.customerName !== '이름없음'; });
+  }
+
+  /* ---------- 값 다듬기 ---------- */
+
+  // 이름이 아닌 흔한 말들 (카톡 대화에서 이름으로 잘못 잡히는 것 방지)
+  var NOT_NAME = /^(안녕하세요|안녕하십니까|감사합니다|감사해요|고맙습니다|부탁드립니다|부탁드려요|부탁해요|죄송합니다|알겠습니다|알겠어요|가능할까요|가능한가요|가능해요|맞나요|맞을까요|문의드립니다|문의드려요|예약이요|주문이요|네네|넵넵|여보세요|사장님)$/;
+  function looksLikeName(w) {
+    if (!w) return false;
+    if (NOT_NAME.test(w)) return false;
+    if (/케이크|주문|예약|픽업|가격|금액|문의|배송|포장/.test(w)) return false;
+    return true;
+  }
+  // 남은 글에서 사람 이름처럼 보이는 첫 단어 고르기
+  function pickName(text) {
+    // "박지훈입니다", "김민지예요", "이서연님" 처럼 뒤에 말이 붙은 경우를 먼저 봄
+    var tagged = text.match(/([가-힣]{2,4})(?:입니다|입니당|이라고|이에요|예요|이구요|이고요|님|씨)/);
+    if (tagged && looksLikeName(tagged[1])) return tagged[1];
+    var re = /[가-힣]{2,4}/g, m;
+    while ((m = re.exec(text)) !== null) {
+      if (looksLikeName(m[0])) return m[0];
+    }
+    return '';
+  }
+
+  // 주문내용에서 인사말·이름·군더더기를 걷어냄 (미리보기에서 고칠 수 있으니 완벽할 필요는 없음)
+  function cleanRequest(text, name) {
+    var s = text;
+    if (name) s = s.replace(new RegExp(name + '(입니다|입니당|이라고|이에요|예요|이구요|이고요|님|씨)?', 'g'), ' ');
+    return s
+      .replace(/(안녕하세요|안녕하십니까|감사합니다|감사해요|고맙습니다|부탁드립니다|부탁드려요|부탁해요|예약할게요|예약이요|주문할게요|주문이요|맞나요|맞을까요|가능할까요|가능한가요|찾으러 ?갈게요|가지러 ?갈게요)/g, ' ')
+      .replace(/(예약자|연락처|고객명|고객이름|픽업날짜|픽업시간|참고사항|주문요청사항)/g, ' ')
+      .replace(/[?!]+/g, ' ')
+      // 전화번호·날짜를 걷어내고 남은 조사 부스러기 정리
+      .replace(/(^|\s)(이고요|이구요|입니다|입니당|이에요|예요|에|은|는|이|가|요)(?=\s|$)/g, ' ')
+      .replace(/\s{2,}/g, ' ').replace(/^[\s/,|\-]+|[\s/,|\-]+$/g, '').trim();
+  }
+
+  function findDate(s) {
+    var m = s.match(/(20\d{2})\s*[-.\/년]\s*(\d{1,2})\s*[-.\/월]\s*(\d{1,2})/);
+    if (m) return m[1] + '-' + U.pad(+m[2]) + '-' + U.pad(+m[3]);
+    m = s.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
+    if (m) return yearFor(+m[1], +m[2]);
+    m = s.match(/(?:^|[^\d])(\d{1,2})\s*[\/.]\s*(\d{1,2})(?![\d:])/);
+    if (m) return yearFor(+m[1], +m[2]);
+    return '';
+  }
+  // 월/일만 적혀 있으면 올해로 보되, 이미 지난 날짜면 내년으로
+  function yearFor(mon, day) {
+    var now = new Date();
+    var y = now.getFullYear();
+    var d = y + '-' + U.pad(mon) + '-' + U.pad(day);
+    if (d < U.today()) d = (y + 1) + '-' + U.pad(mon) + '-' + U.pad(day);
+    return d;
+  }
+  function findTime(s) {
+    var ampm = s.match(/(오전|오후)\s*(\d{1,2})\s*(?:시|:)\s*(\d{1,2})?/);
+    if (ampm) {
+      var h = +ampm[2];
+      if (ampm[1] === '오후' && h < 12) h += 12;
+      if (ampm[1] === '오전' && h === 12) h = 0;
+      return U.pad(h) + ':' + U.pad(ampm[3] ? +ampm[3] : 0);
+    }
+    var m = s.match(/(?:^|[^\d])(\d{1,2})\s*:\s*(\d{2})/);
+    if (m) return U.pad(+m[1]) + ':' + U.pad(+m[2]);
+    m = s.match(/(\d{1,2})\s*시\s*(\d{1,2})?\s*분?/);
+    if (m) {
+      var h = +m[1];
+      // "2시" 처럼 오전/오후를 안 적었으면 케이크 픽업 시간대(오후)로 봄
+      if (h >= 1 && h <= 8) h += 12;
+      return U.pad(h) + ':' + U.pad(m[2] ? +m[2] : 0);
+    }
+    return '';
+  }
+  function stripDateTime(s) {
+    return s
+      .replace(/20\d{2}\s*[-.\/년]\s*\d{1,2}\s*[-.\/월]\s*\d{1,2}\s*일?/g, ' ')
+      .replace(/\d{1,2}\s*월\s*\d{1,2}\s*일/g, ' ')
+      .replace(/(오전|오후)?\s*\d{1,2}\s*[:시]\s*\d{0,2}\s*분?/g, ' ')
+      .replace(/\d{1,2}\s*[\/.]\s*\d{1,2}/g, ' ');
+  }
+
+  // 읽어낸 값을 주문 형식으로 정리
+  function normalize(r) {
+    var date = r.pickupDate ? (findDate(r.pickupDate) || r.pickupDate) : '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) date = '';
+    // 시간을 따로 안 적고 "픽업날짜: 12월 24일 오후 5시" 처럼 함께 적은 경우도 읽어냄
+    var time = (r.pickupTime && findTime(r.pickupTime)) ||
+               (r.pickupDate && findTime(String(r.pickupDate).replace(/20\d{2}\s*[-.\/년]\s*\d{1,2}\s*[-.\/월]\s*\d{1,2}\s*일?/g, ' '))) || '';
+    var name = String(r.customerName || '').replace(/(님|씨)$/, '').trim();
+    return {
+      customerName: name,
+      phone: U.phone(String(r.phone || '').trim()),
+      pickupDate: date || U.today(),
+      pickupTime: time || '14:00',
+      request: String(r.request || '').trim(),
+      price: U.toNum(r.price),
+      note: String(r.note || '').trim()
+    };
+  }
+
+  /* ---------- 이벤트 연결 ---------- */
+  function bind(view) {
+    U.$('#orderForm', view).addEventListener('submit', saveForm);
+    U.$('#formReset', view).onclick = resetForm;
+    U.$('#pasteImport', view).onclick = pasteModal;
+
+    U.$('#autoCost', view).onclick = function () {
+      var f = U.$('#orderForm', view);
+      var r = Cost.calcFromText(f.request.value);
+      if (!r.ok) { U.toast(r.reason); return; }
+      f.cost.value = Math.round(r.total / 10) * 10;   // 10원 단위로 정리
+      if (!U.toNum(f.price.value)) f.price.value = r.suggested;
+      U.toast('원가 ' + U.won(r.total) + ' — ' + r.name + ' (' + r.sourceLabel + ')');
+    };
+
+    U.$('#calPrev', view).onclick = function () { calMonth = U.shiftMonth(calMonth, -1); refreshCal(); };
+    U.$('#calNext', view).onclick = function () { calMonth = U.shiftMonth(calMonth, 1); refreshCal(); };
+
+    view.addEventListener('click', function (e) {
+      var day = e.target.closest('.day[data-date]');
+      if (day) { dayModal(day.dataset.date); return; }
+      var t = e.target;
+      if (t.dataset.editOrder) loadToForm(t.dataset.editOrder);
+    });
+
+    function refreshCal() {
+      U.$('#calTitle', view).textContent = U.monthTitle(calMonth);
+      U.$('#calBody', view).innerHTML = calendarGrid();
+    }
+  }
+
+  return { render: render, all: all, byMonth: byMonth, byDate: byDate,
+           statusText: statusText, statusCls: statusCls, parseReservations: parseReservations };
+})();
+
+/* ===== js/monthly.js ===== */
+/* 월별 정산 - 한 달(1일~말일) 주문 전체 리스트 + 매출/원가 한눈에 보기 */
+window.Monthly = (function () {
+
+  var month = U.thisMonth();
+
+  function render(view) {
+    var orders = Orders.byMonth(month);
+    var live = orders.filter(function (o) { return o.status !== 'canceled'; });
+
+    var sales = sum(live, 'price');
+    var cost = sum(live, 'cost');
+    var profit = sales - cost;
+    var rate = sales ? Math.round(profit / sales * 100) : 0;
+    var deposit = sum(live.filter(function (o) { return o.status !== 'done'; }), 'deposit');
+
+    view.innerHTML = '' +
+      '<div class="card">' +
+        '<div class="cal-head">' +
+          '<button class="btn ghost small" id="mPrev">‹ 이전달</button>' +
+          '<div class="cal-title">' + U.monthTitle(month) + ' 정산 <span class="cap-sub" style="font-weight:400">(1일~' + U.lastDayOfMonth(month) + '일)</span></div>' +
+          '<button class="btn ghost small" id="mNext">다음달 ›</button>' +
+        '</div>' +
+        '<div class="grid four">' +
+          tile('주문 건수', live.length + '건', '') +
+          tile('총 매출', U.won(sales), 'rose') +
+          tile('총 원가', U.won(cost), 'amber') +
+          tile('순이익', U.won(profit) + ' (' + rate + '%)', 'mint') +
+        '</div>' +
+        (deposit ? '<p class="hint" style="margin-top:10px">받은 예약금 중 아직 픽업 전인 금액: <b>' + U.won(deposit) + '</b></p>' : '') +
+      '</div>' +
+
+      '<div class="card">' +
+        '<div class="row"><h2 style="margin:0">📋 주문 전체 리스트</h2><div class="spacer"></div>' +
+        '<button class="btn ghost small" id="mCsv">엑셀(CSV) 저장</button></div>' +
+        (orders.length ? orderTable(orders) : '<div class="empty">이 달에는 주문이 없어요.</div>') +
+      '</div>' +
+
+      (live.length ? '<div class="card"><h2>🗓️ 날짜별 합계</h2>' + dailyTable(live) + '</div>' : '') +
+
+      '<div class="card"><h2>🏆 케이크별 순위</h2>' +
+        (live.length ? rankTable(live) : '<div class="empty">데이터가 없어요.</div>') +
+      '</div>';
+
+    bind(view, orders);
+  }
+
+  function sum(arr, key) {
+    return arr.reduce(function (a, o) { return a + U.toNum(o[key]); }, 0);
+  }
+  function tile(label, value, cls) {
+    return '<div class="stat ' + cls + '"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>';
+  }
+
+  function orderTable(orders) {
+    var rows = orders.map(function (o) {
+      var profit = U.toNum(o.price) - U.toNum(o.cost);
+      return '<tr' + (o.status === 'canceled' ? ' style="opacity:.45"' : '') + '>' +
+        '<td>' + U.korDate(o.pickupDate) + '<br><span class="cap-sub">' + U.esc(o.pickupTime || '') + '</span></td>' +
+        '<td><b>' + U.esc(o.customerName) + '</b><br><span class="cap-sub">' + U.esc(U.phone(o.phone)) + '</span></td>' +
+        '<td>' + U.esc(o.request || '') + (o.note ? '<br><span class="cap-sub">📌 ' + U.esc(o.note) + '</span>' : '') + '</td>' +
+        '<td class="num">' + U.num(o.price) + '</td>' +
+        '<td class="num">' + U.num(o.cost) + '</td>' +
+        '<td class="num" style="color:' + (profit >= 0 ? 'var(--mint)' : 'var(--red)') + '"><b>' + U.num(profit) + '</b></td>' +
+        '<td><span class="badge ' + Orders.statusCls(o.status) + '">' + Orders.statusText(o.status) + '</span></td>' +
+        '</tr>';
+    }).join('');
+    var live = orders.filter(function (o) { return o.status !== 'canceled'; });
+    return '<div class="table-wrap"><table>' +
+      '<thead><tr><th>픽업날짜</th><th>고객</th><th>주문내용</th><th class="num">매출</th><th class="num">원가</th><th class="num">이익</th><th>상태</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+      '<tfoot><tr><td colspan="3">합계 (취소 제외)</td>' +
+        '<td class="num">' + U.num(sum(live, 'price')) + '</td>' +
+        '<td class="num">' + U.num(sum(live, 'cost')) + '</td>' +
+        '<td class="num">' + U.num(sum(live, 'price') - sum(live, 'cost')) + '</td><td></td></tr></tfoot>' +
+      '</table></div>';
+  }
+
+  function dailyTable(live) {
+    var map = {};
+    live.forEach(function (o) {
+      var d = o.pickupDate;
+      if (!map[d]) map[d] = { n: 0, price: 0, cost: 0 };
+      map[d].n++; map[d].price += U.toNum(o.price); map[d].cost += U.toNum(o.cost);
+    });
+    var rows = Object.keys(map).sort().map(function (d) {
+      var v = map[d];
+      return '<tr><td>' + U.korDate(d) + '</td><td class="num">' + v.n + '건</td>' +
+        '<td class="num">' + U.num(v.price) + '</td><td class="num">' + U.num(v.cost) + '</td>' +
+        '<td class="num">' + U.num(v.price - v.cost) + '</td></tr>';
+    }).join('');
+    return '<div class="table-wrap"><table><thead><tr><th>날짜</th><th class="num">건수</th>' +
+      '<th class="num">매출</th><th class="num">원가</th><th class="num">이익</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
+  function rankTable(live) {
+    var map = {};
+    live.forEach(function (o) {
+      // 주문내용 첫 줄을 케이크 이름처럼 사용
+      var key = (o.request || '기타').split('\n')[0].slice(0, 24) || '기타';
+      if (!map[key]) map[key] = { n: 0, price: 0 };
+      map[key].n++; map[key].price += U.toNum(o.price);
+    });
+    var rows = Object.keys(map).map(function (k) { return { k: k, v: map[k] }; })
+      .sort(function (a, b) { return b.v.n - a.v.n || b.v.price - a.v.price; })
+      .slice(0, 10)
+      .map(function (x, i) {
+        return '<tr><td>' + (i + 1) + '</td><td>' + U.esc(x.k) + '</td><td class="num">' + x.v.n + '건</td>' +
+          '<td class="num">' + U.num(x.v.price) + '</td></tr>';
+      }).join('');
+    return '<div class="table-wrap"><table><thead><tr><th>순위</th><th>주문내용</th><th class="num">건수</th><th class="num">매출</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
+  function bind(view, orders) {
+    U.$('#mPrev', view).onclick = function () { month = U.shiftMonth(month, -1); App.render(); };
+    U.$('#mNext', view).onclick = function () { month = U.shiftMonth(month, 1); App.render(); };
+    U.$('#mCsv', view).onclick = function () {
+      var rows = [['픽업날짜', '픽업시간', '고객이름', '연락처', '주문요청사항', '가격(매출)', '원가', '이익', '예약금', '참고사항', '경로', '상태']];
+      orders.forEach(function (o) {
+        rows.push([o.pickupDate, o.pickupTime || '', o.customerName, U.phone(o.phone), o.request || '',
+          U.toNum(o.price), U.toNum(o.cost), U.toNum(o.price) - U.toNum(o.cost), U.toNum(o.deposit),
+          o.note || '', o.source || '', Orders.statusText(o.status)]);
+      });
+      U.downloadCsv(month + '_주문정산.csv', rows);
+      U.toast('CSV 파일을 저장했어요');
+    };
+  }
+
+  return { render: render, setMonth: function (m) { month = m; } };
+})();
+
+/* ===== js/inventory.js ===== */
+/* 재고 현황 - 케이크 상자, 보냉백, 리본 등 */
+window.Inventory = (function () {
+
+  var CATEGORIES = ['상자', '보냉백', '리본', '초·장식', '받침·트레이', '포장지', '기타'];
+  var filter = '전체';
+
+  function render(view) {
+    var items = DB.list('inventory');
+    var shown = filter === '전체' ? items : items.filter(function (i) { return i.category === filter; });
+    shown = shown.slice().sort(function (a, b) {
+      return (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || '');
+    });
+
+    var low = items.filter(isLow);
+    var totalValue = items.reduce(function (a, i) { return a + U.toNum(i.qty) * U.toNum(i.unitPrice); }, 0);
+
+    view.innerHTML = '' +
+      '<div class="card">' +
+        '<div class="grid three">' +
+          tile('전체 품목', items.length + '종', '') +
+          tile('재고 금액', U.won(totalValue), 'rose') +
+          tile('부족 품목', low.length + '종', low.length ? 'amber' : 'mint') +
+        '</div>' +
+        (low.length ? '<div class="warn" style="margin-top:12px">⚠️ <b>주문이 필요해요:</b> ' +
+          low.map(function (i) { return U.esc(i.name) + ' (' + U.num(i.qty) + U.esc(i.unit || '개') + ' 남음)'; }).join(', ') + '</div>' : '') +
+      '</div>' +
+
+      '<div class="card">' +
+        '<div class="row"><h2 style="margin:0">📦 재고 현황</h2><div class="spacer"></div>' +
+          '<button class="btn ghost small" id="invCsv">CSV 저장</button>' +
+          '<button class="btn small" id="addItem">+ 품목 추가</button></div>' +
+        '<div class="row" style="margin:10px 0">' +
+          ['전체'].concat(CATEGORIES).map(function (c) {
+            return '<button class="btn ' + (c === filter ? '' : 'ghost') + ' small" data-filter="' + c + '">' + c + '</button>';
+          }).join('') +
+        '</div>' +
+        (shown.length ? table(shown) : '<div class="empty">등록된 품목이 없어요. [+ 품목 추가]를 눌러보세요.</div>') +
+        '<p class="hint" style="margin-top:10px">➖ ➕ 버튼으로 수량을 바로 조절할 수 있어요. ' +
+        '현재 수량이 안전재고 이하가 되면 빨갛게 표시되고 위에 알려드립니다.</p>' +
+      '</div>';
+
+    bind(view, shown);
+  }
+
+  function isLow(i) {
+    var min = U.toNum(i.minQty);
+    return min > 0 && U.toNum(i.qty) <= min;
+  }
+  function tile(label, value, cls) {
+    return '<div class="stat ' + cls + '"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>';
+  }
+
+  function table(items) {
+    var rows = items.map(function (i) {
+      var qty = U.toNum(i.qty), unit = i.unit || '개';
+      return '<tr' + (isLow(i) ? ' class="low"' : '') + '>' +
+        '<td><b>' + U.esc(i.name) + '</b>' + (i.memo ? '<br><span class="cap-sub">' + U.esc(i.memo) + '</span>' : '') + '</td>' +
+        '<td><span class="badge gray">' + U.esc(i.category || '기타') + '</span></td>' +
+        '<td class="num" style="white-space:nowrap">' +
+          '<button class="icon-btn" data-minus="' + i.id + '">➖</button>' +
+          '<b style="display:inline-block;min-width:46px">' + U.num(qty) + '</b>' +
+          '<button class="icon-btn" data-plus="' + i.id + '">➕</button>' +
+          ' <span class="cap-sub">' + U.esc(unit) + '</span>' +
+        '</td>' +
+        '<td class="num">' + (U.toNum(i.minQty) || '-') + '</td>' +
+        '<td class="num">' + U.won(i.unitPrice) + '</td>' +
+        '<td class="num">' + U.won(qty * U.toNum(i.unitPrice)) + '</td>' +
+        '<td class="num">' + (isLow(i) ? '<span class="badge red">부족</span>' : '<span class="badge mint">충분</span>') + '</td>' +
+        '<td class="num"><button class="icon-btn" data-edit="' + i.id + '">✏️</button>' +
+        '<button class="icon-btn" data-del="' + i.id + '">🗑️</button></td></tr>';
+    }).join('');
+    return '<div class="table-wrap"><table><thead><tr><th>품목</th><th>분류</th><th class="num">현재 수량</th>' +
+      '<th class="num">안전재고</th><th class="num">개당 단가</th><th class="num">재고 금액</th><th class="num">상태</th><th></th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>';
+  }
+
+  function itemModal(id) {
+    var it = id ? DB.find('inventory', id) : { name: '', category: '상자', qty: 0, unit: '개', minQty: 10, unitPrice: 0, memo: '' };
+    var html = '' +
+      '<div class="field"><label>품목명 <span style="color:var(--rose)">*</span></label>' +
+        '<input id="iName" value="' + U.esc(it.name) + '" placeholder="예: 1호 케이크 상자 (화이트)"></div>' +
+      '<div class="grid two">' +
+        '<div class="field"><label>분류</label><select id="iCat">' +
+          CATEGORIES.map(function (c) { return '<option' + (c === it.category ? ' selected' : '') + '>' + c + '</option>'; }).join('') +
+        '</select></div>' +
+        '<div class="field"><label>단위</label><input id="iUnit" value="' + U.esc(it.unit || '개') + '" placeholder="개, 롤, 장"></div>' +
+        '<div class="field"><label>현재 수량</label><input id="iQty" type="number" step="any" value="' + U.esc(it.qty) + '"></div>' +
+        '<div class="field"><label>안전재고 (이하면 알림)</label><input id="iMin" type="number" step="any" value="' + U.esc(it.minQty) + '"></div>' +
+        '<div class="field"><label>개당 단가(원)</label><input id="iPrice" type="number" step="any" value="' + U.esc(it.unitPrice) + '"></div>' +
+        '<div class="field"><label>구매처 링크 (선택)</label><input id="iUrl" value="' + U.esc(it.url || '') + '" placeholder="https://"></div>' +
+      '</div>' +
+      '<div class="field"><label>메모</label><input id="iMemo" value="' + U.esc(it.memo || '') + '" placeholder="예: 100개 묶음 구매"></div>' +
+      '<div class="row end"><button class="btn ghost" id="iCancel">취소</button><button class="btn" id="iSave">저장</button></div>';
+
+    U.modal(id ? '품목 수정' : '품목 추가', html, function (body) {
+      U.$('#iCancel', body).onclick = U.closeModal;
+      U.$('#iSave', body).onclick = function () {
+        var name = U.$('#iName', body).value.trim();
+        if (!name) { U.toast('품목명을 적어주세요'); return; }
+        DB.upsert('inventory', {
+          id: it.id, name: name,
+          category: U.$('#iCat', body).value,
+          unit: U.$('#iUnit', body).value.trim() || '개',
+          qty: U.toNum(U.$('#iQty', body).value),
+          minQty: U.toNum(U.$('#iMin', body).value),
+          unitPrice: U.toNum(U.$('#iPrice', body).value),
+          url: U.$('#iUrl', body).value.trim(),
+          memo: U.$('#iMemo', body).value.trim()
+        });
+        U.closeModal(); U.toast('저장했어요'); App.render();
+      };
+    });
+  }
+
+  function adjust(id, delta) {
+    var it = DB.find('inventory', id); if (!it) return;
+    var next = Math.max(0, U.toNum(it.qty) + delta);
+    DB.upsert('inventory', { id: id, qty: next });
+    App.render();
+  }
+
+  function bind(view, shown) {
+    U.$('#addItem', view).onclick = function () { itemModal(null); };
+    U.$('#invCsv', view).onclick = function () {
+      var rows = [['품목명', '분류', '현재수량', '단위', '안전재고', '개당단가', '재고금액', '메모']];
+      DB.list('inventory').forEach(function (i) {
+        rows.push([i.name, i.category, U.toNum(i.qty), i.unit, U.toNum(i.minQty), U.toNum(i.unitPrice),
+          U.toNum(i.qty) * U.toNum(i.unitPrice), i.memo || '']);
+      });
+      U.downloadCsv('재고현황.csv', rows);
+    };
+    view.addEventListener('click', function (e) {
+      var t = e.target;
+      if (t.dataset.filter) { filter = t.dataset.filter; App.render(); }
+      if (t.dataset.edit) itemModal(t.dataset.edit);
+      if (t.dataset.del && U.confirmBox('이 품목을 삭제할까요?')) { DB.remove('inventory', t.dataset.del); App.render(); }
+      if (t.dataset.plus) adjust(t.dataset.plus, 1);
+      if (t.dataset.minus) adjust(t.dataset.minus, -1);
+    });
+  }
+
+  return { render: render, CATEGORIES: CATEGORIES, isLow: isLow };
+})();
+
+/* ===== js/gallery.js ===== */
+/* 케이크 디자인 갤러리
+   사진은 브라우저 안(IndexedDB)에 저장되고 인터넷으로 올라가지 않습니다. */
+window.Gallery = (function () {
+
+  var urlCache = {};   // id -> objectURL (화면을 다시 그릴 때 정리)
+  var tagFilter = '전체';
+
+  function render(view) {
+    releaseUrls();
+    var photos = DB.list('photos').slice().sort(function (a, b) {
+      return (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+    var tags = {};
+    photos.forEach(function (p) { (p.tags || []).forEach(function (t) { tags[t] = (tags[t] || 0) + 1; }); });
+    var tagList = Object.keys(tags).sort();
+    var shown = tagFilter === '전체' ? photos : photos.filter(function (p) { return (p.tags || []).indexOf(tagFilter) >= 0; });
+
+    view.innerHTML = '' +
+      '<div class="card">' +
+        '<div class="row"><h2 style="margin:0">🖼️ 케이크 디자인 갤러리</h2><div class="spacer"></div>' +
+          '<label class="btn small" for="photoInput" style="margin:0">+ 사진 올리기</label>' +
+          '<input type="file" id="photoInput" accept="image/*" multiple style="display:none;width:auto">' +
+        '</div>' +
+        '<p class="hint">사진 ' + photos.length + '장 · 여러 장을 한 번에 올릴 수 있어요. ' +
+        '사진은 자동으로 가볍게 줄여서 저장합니다.</p>' +
+        (tagList.length ? '<div class="row" style="margin-bottom:12px">' +
+          ['전체'].concat(tagList).map(function (t) {
+            return '<button class="btn ' + (t === tagFilter ? '' : 'ghost') + ' small" data-tag="' + U.esc(t) + '">' +
+              U.esc(t) + (t === '전체' ? '' : ' ' + tags[t]) + '</button>';
+          }).join('') + '</div>' : '') +
+        (shown.length ? '<div class="gal" id="galGrid">' + shown.map(card).join('') + '</div>'
+          : '<div class="empty">아직 사진이 없어요.<br>지금까지 만든 케이크 사진을 올려보세요 🎂</div>') +
+      '</div>';
+
+    bind(view);
+    shown.forEach(loadImage);
+  }
+
+  function card(p) {
+    return '<figure data-photo="' + p.id + '">' +
+      '<img id="img-' + p.id + '" alt="' + U.esc(p.title || '케이크 사진') + '" loading="lazy">' +
+      '<figcaption><div class="cap-title">' + U.esc(p.title || '(제목 없음)') + '</div>' +
+      '<div class="cap-sub">' + (p.date ? U.korDate(p.date) : '') +
+      ((p.tags || []).length ? ' · ' + U.esc(p.tags.join(', ')) : '') + '</div></figcaption></figure>';
+  }
+
+  function loadImage(p) {
+    DB.photoGet(p.id).then(function (blob) {
+      if (!blob) return;
+      var el = document.getElementById('img-' + p.id);
+      if (!el) return;
+      var url = URL.createObjectURL(blob);
+      urlCache[p.id] = url;
+      el.src = url;
+    }).catch(function () { });
+  }
+  function releaseUrls() {
+    Object.keys(urlCache).forEach(function (k) { URL.revokeObjectURL(urlCache[k]); });
+    urlCache = {};
+  }
+
+  /* ---------- 업로드 (자동 축소) ---------- */
+  function handleFiles(files) {
+    var arr = Array.prototype.slice.call(files).filter(function (f) { return /^image\//.test(f.type); });
+    if (!arr.length) return;
+    U.toast(arr.length + '장 저장 중...');
+    var chain = Promise.resolve();
+    arr.forEach(function (file) {
+      chain = chain.then(function () { return shrink(file); }).then(function (blob) {
+        var meta = DB.upsert('photos', {
+          title: file.name.replace(/\.[^.]+$/, '').slice(0, 40),
+          date: U.today(), tags: [], memo: ''
+        });
+        return DB.photoPut(meta.id, blob);
+      });
+    });
+    chain.then(function () { U.toast('사진을 저장했어요'); App.render(); })
+      .catch(function (e) { U.toast('저장 실패: ' + e.message); });
+  }
+
+  // 긴 변 1400px 이하 JPEG 로 변환 (용량 절약)
+  function shrink(file) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function () {
+        var max = 1400;
+        var w = img.width, h = img.height;
+        var scale = Math.min(1, max / Math.max(w, h));
+        var cw = Math.round(w * scale), ch = Math.round(h * scale);
+        var c = document.createElement('canvas');
+        c.width = cw; c.height = ch;
+        c.getContext('2d').drawImage(img, 0, 0, cw, ch);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (blob) {
+          resolve(blob || file);
+        }, 'image/jpeg', 0.85);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('이미지를 읽을 수 없어요')); };
+      img.src = url;
+    });
+  }
+
+  /* ---------- 자세히 보기 / 수정 ---------- */
+  function detail(id) {
+    var p = DB.find('photos', id); if (!p) return;
+    var html = '<div class="lightbox"><img id="bigImg" alt=""></div>' +
+      '<div class="field"><label>제목</label><input id="pTitle" value="' + U.esc(p.title || '') + '"></div>' +
+      '<div class="grid two">' +
+        '<div class="field"><label>만든 날짜</label><input id="pDate" type="date" value="' + U.esc(p.date || '') + '"></div>' +
+        '<div class="field"><label>태그 (쉼표로 구분)</label><input id="pTags" value="' + U.esc((p.tags || []).join(', ')) + '" placeholder="생화, 2단, 웨딩"></div>' +
+      '</div>' +
+      '<div class="field"><label>메모</label><textarea id="pMemo">' + U.esc(p.memo || '') + '</textarea></div>' +
+      '<div class="row end"><button class="btn danger" id="pDel">삭제</button>' +
+      '<button class="btn ghost" id="pClose">닫기</button><button class="btn" id="pSave">저장</button></div>';
+
+    U.modal(p.title || '사진', html, function (body) {
+      DB.photoGet(id).then(function (blob) {
+        if (!blob) return;
+        var url = URL.createObjectURL(blob);
+        var img = U.$('#bigImg', body);
+        if (img) { img.src = url; img.onload = function () { setTimeout(function () { URL.revokeObjectURL(url); }, 3000); }; }
+      });
+      U.$('#pClose', body).onclick = U.closeModal;
+      U.$('#pSave', body).onclick = function () {
+        DB.upsert('photos', {
+          id: id,
+          title: U.$('#pTitle', body).value.trim(),
+          date: U.$('#pDate', body).value,
+          tags: U.$('#pTags', body).value.split(',').map(function (s) { return s.trim(); }).filter(Boolean),
+          memo: U.$('#pMemo', body).value.trim()
+        });
+        U.closeModal(); U.toast('저장했어요'); App.render();
+      };
+      U.$('#pDel', body).onclick = function () {
+        if (!U.confirmBox('이 사진을 삭제할까요?')) return;
+        DB.photoDel(id).finally(function () {
+          DB.remove('photos', id); U.closeModal(); U.toast('삭제했어요'); App.render();
+        });
+      };
+    });
+  }
+
+  function bind(view) {
+    var input = U.$('#photoInput', view);
+    input.onchange = function () { handleFiles(input.files); input.value = ''; };
+    view.addEventListener('click', function (e) {
+      var t = e.target;
+      if (t.dataset.tag) { tagFilter = t.dataset.tag; App.render(); return; }
+      var fig = t.closest('figure[data-photo]');
+      if (fig) detail(fig.dataset.photo);
+    });
+  }
+
+  return { render: render };
+})();
+
+/* ===== js/notify.js ===== */
+/* 고객 알림 - 주문 당일 / 픽업 전날 / 픽업 후 3가지 문자
+   문자는 사장님 요금제의 기본 제공 문자를 쓰기 때문에 추가 비용이 들지 않습니다.
+   (버튼을 누르면 문자앱이 내용이 채워진 채로 열립니다) */
+window.Notify = (function () {
+
+  var STAGES = [
+    { key: 'orderDay',    label: '주문 당일',  emoji: '🧾', desc: '주문을 받은 날 보내는 확인 문자' },
+    { key: 'dayBefore',   label: '픽업 전날',  emoji: '⏰', desc: '픽업 하루 전에 보내는 안내 문자' },
+    { key: 'afterPickup', label: '픽업 후',    emoji: '💐', desc: '픽업이 끝난 뒤 보내는 감사 문자' }
+  ];
+
+  /* ---------- 문구 만들기 ---------- */
+  function buildMessage(stageKey, order) {
+    var t = DB.templates()[stageKey] || '';
+    var set = DB.settings();
+    var price = U.toNum(order.price), dep = U.toNum(order.deposit);
+    var map = {
+      '가게이름': set.shopName || '케이크 공방',
+      '고객명': order.customerName || '',
+      '픽업일': U.korDate(order.pickupDate),
+      '픽업시간': order.pickupTime || '',
+      '주문내용': (order.request || '').replace(/\n/g, ' '),
+      '금액': U.won(price),
+      '예약금': U.won(dep),
+      '잔금': U.won(Math.max(0, price - dep)),
+      '참고사항': order.note || ''
+    };
+    return t.replace(/\{\{\s*([^}]+?)\s*\}\}/g, function (m, k) {
+      return map.hasOwnProperty(k) ? map[k] : m;
+    });
+  }
+
+  /* ---------- 보낼 대상 찾기 ----------
+     아직 안 보낸 건은 날짜가 지나도 사라지지 않고 "놓침"으로 남습니다. */
+  function queue() {
+    var today = U.today();
+    var tomorrow = U.addDays(today, 1);
+    var orders = DB.list('orders').filter(function (o) { return o.status !== 'canceled'; });
+
+    function sent(o, k) { return !!(o.notify && o.notify[k] && o.notify[k].sent); }
+    function withLate(o, isLate) { return { order: o, late: isLate }; }
+
+    var q = { orderDay: [], dayBefore: [], afterPickup: [] };
+
+    orders.forEach(function (o) {
+      var od = o.orderDate || (o.createdAt || '').slice(0, 10);
+
+      // 주문 당일 - 주문받은 날. 못 보냈으면 7일까지 놓침으로 남김
+      if (od && !sent(o, 'orderDay')) {
+        var dOrder = U.diffDays(od, today);
+        if (dOrder >= 0 && dOrder <= 7) q.orderDay.push(withLate(o, dOrder >= 1));
+      }
+
+      // 픽업 전날 - 내일 픽업이면 오늘 발송. 픽업 당일까지 못 보냈으면 놓침
+      if (!sent(o, 'dayBefore') && o.pickupDate >= today) {
+        if (o.pickupDate === tomorrow) q.dayBefore.push(withLate(o, false));
+        else if (o.pickupDate === today) q.dayBefore.push(withLate(o, true));
+      }
+
+      // 픽업 후 - 픽업이 끝난 뒤. 7일까지 남김
+      if (!sent(o, 'afterPickup')) {
+        var dPick = U.diffDays(o.pickupDate, today);
+        if (dPick >= 1 && dPick <= 7) q.afterPickup.push(withLate(o, dPick >= 2));
+        else if (dPick === 0 && o.status === 'done') q.afterPickup.push(withLate(o, false));
+      }
+    });
+
+    // 픽업이 가까운 순서로
+    Object.keys(q).forEach(function (k) {
+      q[k].sort(function (a, b) { return (a.order.pickupDate || '').localeCompare(b.order.pickupDate || ''); });
+    });
+    return q;
+  }
+
+  function totalCount() {
+    var q = queue();
+    return STAGES.reduce(function (a, s) { return a + q[s.key].length; }, 0);
+  }
+
+  function markSent(orderId, stage, value) {
+    var o = DB.find('orders', orderId); if (!o) return;
+    var n = Object.assign({}, o.notify || {});
+    n[stage] = value ? { sent: true, at: new Date().toISOString() } : { sent: false, at: '' };
+    DB.upsert('orders', { id: orderId, notify: n });
+  }
+
+  // 최근에 보낸 기록
+  function history(limit) {
+    var out = [];
+    DB.list('orders').forEach(function (o) {
+      STAGES.forEach(function (s) {
+        var rec = o.notify && o.notify[s.key];
+        if (rec && rec.sent && rec.at) out.push({ order: o, stage: s, at: rec.at });
+      });
+    });
+    out.sort(function (a, b) { return b.at.localeCompare(a.at); });
+    return out.slice(0, limit || 10);
+  }
+
+  /* ---------- 화면 ---------- */
+  function render(view) {
+    var q = queue();
+    var total = STAGES.reduce(function (a, s) { return a + q[s.key].length; }, 0);
+    var set = DB.settings();
+    var lateCount = STAGES.reduce(function (a, s) {
+      return a + q[s.key].filter(function (x) { return x.late; }).length;
+    }, 0);
+
+    view.innerHTML = '' +
+      '<div class="card">' +
+        '<h2>💬 오늘 보낼 알림 ' + (total ? '<span class="badge">' + total + '건</span>' : '') + '</h2>' +
+        '<p class="hint">사장님 요금제의 기본 문자를 쓰기 때문에 <b>추가 비용이 들지 않습니다.</b> ' +
+        '[문자 보내기]를 누르면 휴대폰 문자앱이 내용이 채워진 채로 열려요. 보내기만 누르시면 됩니다.</p>' +
+        '<div class="grid three">' +
+          STAGES.map(function (s) {
+            return '<div class="stat ' + (q[s.key].length ? 'rose' : '') + '">' +
+              '<div class="label">' + s.emoji + ' ' + s.label + '</div>' +
+              '<div class="value">' + q[s.key].length + '건</div></div>';
+          }).join('') +
+        '</div>' +
+        (lateCount ? '<div class="warn" style="margin-top:12px">⚠️ 보낼 때를 <b>놓친 알림이 ' + lateCount + '건</b> 있어요. ' +
+          '아래 <span class="badge red">놓침</span> 표시를 확인해 주세요.</div>' : '') +
+        (total ? '<div class="row" style="margin-top:12px"><button class="btn" id="startSend">📱 순서대로 보내기 시작</button>' +
+          '<span class="cap-sub">한 건 보낼 때마다 다음 사람으로 넘어갑니다</span></div>' : '') +
+      '</div>' +
+
+      STAGES.map(function (s) { return stageCard(s, q[s.key]); }).join('') +
+
+      historyCard() +
+
+      '<div class="card">' +
+        '<h2>💻 컴퓨터에서 무료로 문자 보내기</h2>' +
+        '<p class="hint">휴대폰을 들지 않고 컴퓨터에서 바로 보내고 싶다면, 아래 서비스로 휴대폰을 연결해 두세요. ' +
+        '문자는 사장님 휴대폰에서 나가므로 <b>추가 요금이 없습니다.</b></p>' +
+        '<div class="row">' +
+          '<button class="btn ghost small" data-open="https://messages.google.com/web">안드로이드 · 메시지 웹</button>' +
+          '<button class="btn ghost small" data-open="https://www.samsung.com/sec/apps/samsung-messages/">갤럭시 · 삼성 메시지</button>' +
+        '</div>' +
+        '<p class="hint" style="margin-top:8px">아이폰은 같은 애플 계정의 맥에서 메시지 앱으로 보낼 수 있어요.</p>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<h2>✍️ 알림 문구 편집</h2>' +
+        '<p class="hint">중괄호 두 개로 감싼 부분은 주문 내용으로 자동으로 바뀝니다: ' +
+        ['가게이름', '고객명', '픽업일', '픽업시간', '주문내용', '금액', '예약금', '잔금'].map(function (v) {
+          return '<code>{{' + v + '}}</code>';
+        }).join(' ') + '</p>' +
+        STAGES.map(function (s) {
+          return '<div class="field"><label>' + s.emoji + ' ' + s.label + ' <span style="font-weight:400">— ' + s.desc + '</span></label>' +
+            '<textarea data-tpl="' + s.key + '" style="min-height:110px">' + U.esc(DB.templates()[s.key]) + '</textarea></div>';
+        }).join('') +
+        '<div class="row end"><button class="btn ghost" id="tplReset">기본 문구로 되돌리기</button>' +
+        '<button class="btn" id="tplSave">문구 저장</button></div>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<h2>⚙️ 예약 받는 방식</h2>' +
+        '<div class="field"><select id="resSource" style="max-width:340px">' +
+          '<option value="manual"' + (set.reservationSource === 'manual' ? ' selected' : '') + '>직접 입력 (주문서에 사장님이 입력)</option>' +
+          '<option value="paste"' + (set.reservationSource === 'paste' ? ' selected' : '') + '>채팅 내용 붙여넣기</option>' +
+        '</select></div>' +
+        '<p class="hint">주문서 화면의 [💬 채팅 내용으로 주문 만들기]는 어느 쪽을 골라도 언제든 쓸 수 있어요. ' +
+        '이 설정은 주문서의 <b>주문 경로 기본값</b>만 정합니다.</p>' +
+        '<div class="warn">📱 정해진 시각에 <b>사장님이 안 눌러도 자동으로</b> 문자가 나가게 하려면 문자 발송 서비스 가입 · ' +
+        '발신번호 사전등록 · 작은 서버가 필요하고 건당 10~20원이 듭니다. 주문이 많아져 손으로 보내기 번거로워지면 그때 붙이면 됩니다.</div>' +
+      '</div>';
+
+    bind(view);
+  }
+
+  function stageCard(stage, list) {
+    var body = list.length ? list.map(function (x, i) {
+      var o = x.order;
+      var msg = buildMessage(stage.key, o);
+      return '<div class="q-item send-item" data-order="' + o.id + '" data-stage="' + stage.key + '">' +
+        '<div class="row">' +
+          '<span class="badge gray">' + (i + 1) + ' / ' + list.length + '</span>' +
+          '<b>' + U.esc(o.customerName) + '</b>' +
+          '<span class="cap-sub">' + U.esc(U.phone(o.phone) || '연락처 없음') + '</span>' +
+          (x.late ? '<span class="badge red">놓침</span>' : '') +
+          '<div class="spacer"></div>' +
+          '<span class="badge">픽업 ' + U.korDate(o.pickupDate) + ' ' + U.esc(o.pickupTime || '') + '</span></div>' +
+        '<div class="q-msg">' + U.esc(msg) + '</div>' +
+        '<div class="row">' +
+          (U.phoneDigits(o.phone) ? '<button class="btn small" data-sms>📱 문자 보내기</button>'
+                                  : '<span class="badge red">연락처가 없어 문자를 보낼 수 없어요</span>') +
+          '<button class="btn ghost small" data-copy>📋 카톡용 복사</button>' +
+          '<button class="btn mint small" data-mark>✓ 보냄 표시</button>' +
+        '</div></div>';
+    }).join('') : '<div class="empty">지금 보낼 ' + stage.label + ' 알림이 없어요.</div>';
+
+    return '<div class="card" id="stage-' + stage.key + '"><h2>' + stage.emoji + ' ' + stage.label +
+      (list.length ? ' <span class="badge">' + list.length + '</span>' : '') + '</h2>' +
+      '<p class="hint">' + stage.desc + '</p>' + body + '</div>';
+  }
+
+  function historyCard() {
+    var h = history(10);
+    if (!h.length) return '';
+    return '<details class="card adv"><summary>📮 보낸 기록 ' +
+      '<span class="cap-sub">(최근 ' + h.length + '건)</span></summary>' +
+      '<div class="table-wrap" style="margin-top:12px"><table>' +
+      '<thead><tr><th>보낸 때</th><th>고객</th><th>종류</th><th></th></tr></thead><tbody>' +
+      h.map(function (x) {
+        return '<tr><td>' + U.korDate(x.at.slice(0, 10)) + ' ' + U.esc(x.at.slice(11, 16)) + '</td>' +
+          '<td>' + U.esc(x.order.customerName) + '</td>' +
+          '<td>' + x.stage.emoji + ' ' + x.stage.label + '</td>' +
+          '<td class="num"><button class="btn ghost small" data-undo="' + x.order.id + '" data-undo-stage="' + x.stage.key + '">되돌리기</button></td></tr>';
+      }).join('') + '</tbody></table></div></details>';
+  }
+
+  /* ---------- 문자앱 열기 ---------- */
+  function smsLink(phone, text) {
+    var num = U.phoneDigits(phone);
+    var isIOS = /iP(hone|ad|od)|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+    var sep = isIOS ? '&' : '?';
+    return 'sms:' + num + sep + 'body=' + encodeURIComponent(text);
+  }
+
+  function bind(view) {
+    view.addEventListener('click', function (e) {
+      var t = e.target;
+
+      if (t.dataset.open) { window.open(t.dataset.open, '_blank', 'noopener'); return; }
+
+      if (t.dataset.undo) {
+        markSent(t.dataset.undo, t.dataset.undoStage, false);
+        U.toast('안 보낸 상태로 되돌렸어요'); App.render(); return;
+      }
+
+      var item = t.closest('.send-item');
+      if (item) {
+        var id = item.dataset.order, stage = item.dataset.stage;
+        var o = DB.find('orders', id);
+        if (!o) return;
+        var msg = buildMessage(stage, o);
+        if (t.hasAttribute('data-sms')) {
+          window.location.href = smsLink(o.phone, msg);
+          setTimeout(function () { markSent(id, stage, true); next(); }, 1200);
+        }
+        if (t.hasAttribute('data-copy')) U.copyText(msg);
+        if (t.hasAttribute('data-mark')) { markSent(id, stage, true); next(); }
+      }
+    });
+
+    // 보낸 뒤 남은 건수를 알려주고 다음 대상으로 이동
+    function next() {
+      var left = totalCount();
+      U.toast(left ? '보냄 표시 완료 — ' + left + '건 남았어요' : '오늘 보낼 알림을 모두 끝냈어요 🎉');
+      App.render();
+      if (left) scrollToFirst();
+    }
+    function scrollToFirst() {
+      setTimeout(function () {
+        var first = U.$('.send-item');
+        if (!first) return;
+        first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        first.style.outline = '2px solid var(--rose)';
+        setTimeout(function () { first.style.outline = ''; }, 1600);
+      }, 60);
+    }
+
+    var start = U.$('#startSend', view);
+    if (start) start.onclick = scrollToFirst;
+
+    U.$('#tplSave', view).onclick = function () {
+      var t = {};
+      U.$$('[data-tpl]', view).forEach(function (ta) { t[ta.dataset.tpl] = ta.value; });
+      DB.saveTemplates(t); U.toast('문구를 저장했어요'); App.render();
+    };
+    U.$('#tplReset', view).onclick = function () {
+      if (!U.confirmBox('기본 문구로 되돌릴까요?')) return;
+      DB.write('templates', {}); U.toast('되돌렸어요'); App.render();
+    };
+    U.$('#resSource', view).onchange = function () {
+      DB.saveSettings({ reservationSource: this.value });
+      U.toast('예약 받는 방식을 바꿨어요');
+    };
+  }
+
+  return { render: render, queue: queue, totalCount: totalCount,
+           buildMessage: buildMessage, STAGES: STAGES };
+})();
+
+/* ===== js/settings.js ===== */
+/* 설정 + 백업/복원 */
+window.Settings = (function () {
+
+  function render(view) {
+    var s = DB.settings();
+    var counts = {
+      orders: DB.list('orders').length,
+      menus: DB.list('menus').length,
+      inventory: DB.list('inventory').length,
+      photos: DB.list('photos').length
+    };
+
+    view.innerHTML = '' +
+      '<div class="card">' +
+        '<h2>⚙️ 가게 정보</h2>' +
+        '<div class="grid two">' +
+          '<div class="field"><label>가게 이름</label><input id="sName" value="' + U.esc(s.shopName) + '"></div>' +
+          '<div class="field"><label>사장님 연락처</label><input id="sPhone" value="' + U.esc(s.ownerPhone) + '" placeholder="010-0000-0000"></div>' +
+          '<div class="field"><label>기본 인건비 (케이크 1개당, 원)</label><input id="sLabor" type="number" value="' + U.esc(s.laborPerCake) + '"></div>' +
+          '<div class="field"><label>목표 마진율 (%)</label><input id="sMargin" type="number" min="0" max="95" value="' + U.esc(s.defaultMarginPct) + '"></div>' +
+        '</div>' +
+        '<p class="hint">마진율 ' + s.defaultMarginPct + '% = 판매가의 ' + (100 - s.defaultMarginPct) + '%가 원가라는 뜻이에요. ' +
+        '원가 30,000원이면 추천 판매가는 약 ' + U.won(Math.ceil((30000 / (1 - Math.min(0.95, s.defaultMarginPct / 100))) / 1000) * 1000) + '.</p>' +
+        '<div class="row end"><button class="btn" id="sSave">저장</button></div>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<h2>💾 백업 (아주 중요!)</h2>' +
+        '<div class="warn">모든 자료는 <b>이 브라우저 안에만</b> 저장됩니다. 인터넷으로 나가지 않아 안전하지만, ' +
+        '브라우저 기록을 지우거나 컴퓨터를 바꾸면 사라질 수 있어요. ' +
+        '<b>일주일에 한 번은 아래 [백업 파일 내려받기]</b>를 눌러 파일을 보관해 주세요.</div>' +
+        '<div class="grid three" style="margin:12px 0">' +
+          '<div class="stat"><div class="label">주문</div><div class="value">' + counts.orders + '</div></div>' +
+          '<div class="stat"><div class="label">재고 품목</div><div class="value">' + counts.inventory + '</div></div>' +
+          '<div class="stat"><div class="label">원가표 메뉴</div><div class="value">' + counts.menus + '</div></div>' +
+        '</div>' +
+        '<div class="row">' +
+          '<button class="btn" id="bkExport">⬇️ 백업 파일 내려받기</button>' +
+          '<label class="btn ghost" for="bkFile" style="margin:0">⬆️ 백업 파일 불러오기</label>' +
+          '<input type="file" id="bkFile" accept="application/json,.json" style="display:none;width:auto">' +
+        '</div>' +
+        '<p class="hint" style="margin-top:8px">※ 갤러리 사진은 파일 용량이 커서 백업 파일에 포함되지 않습니다(사진 설명만 저장). ' +
+        '중요한 사진은 휴대폰·컴퓨터에도 원본을 보관해 주세요.</p>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<h2>🧪 예시 데이터 / 초기화</h2>' +
+        '<div class="row">' +
+          '<button class="btn ghost" id="seedBtn">예시 데이터 넣기</button>' +
+          '<button class="btn danger" id="resetBtn">전체 초기화</button>' +
+        '</div>' +
+        '<p class="hint" style="margin-top:8px">전체 초기화는 되돌릴 수 없어요. 먼저 백업 파일을 받아두세요.</p>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<h2>ℹ️ 저장 상태</h2>' +
+        '<p class="hint">브라우저 저장소: ' + (DB.storageOk
+          ? '<span class="badge mint">정상</span>'
+          : '<span class="badge red">사용 불가</span> — 주소창에 <code>file://</code> 로 열었거나 시크릿 모드일 수 있어요. ' +
+            'GitHub Pages 주소로 열거나 시크릿 모드를 꺼 주세요.') + '</p>' +
+      '</div>';
+
+    bind(view);
+  }
+
+  function bind(view) {
+    U.$('#sSave', view).onclick = function () {
+      DB.saveSettings({
+        shopName: U.$('#sName', view).value.trim() || '케이크 공방',
+        ownerPhone: U.$('#sPhone', view).value.trim(),
+        laborPerCake: U.toNum(U.$('#sLabor', view).value),
+        defaultMarginPct: U.toNum(U.$('#sMargin', view).value)
+      });
+      U.toast('저장했어요'); App.render(); App.refreshShopName();
+    };
+
+    U.$('#bkExport', view).onclick = function () {
+      var data = JSON.stringify(DB.exportAll(), null, 2);
+      U.downloadBlob(new Blob([data], { type: 'application/json' }),
+        '케이크공방_백업_' + U.today() + '.json');
+      U.toast('백업 파일을 내려받았어요');
+    };
+
+    var file = U.$('#bkFile', view);
+    file.onchange = function () {
+      var f = file.files[0]; if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var data = JSON.parse(reader.result);
+          if (!U.confirmBox('지금 자료를 백업 파일 내용으로 바꿉니다. 계속할까요?')) return;
+          DB.importAll(data);
+          U.toast('불러왔어요'); App.render(); App.refreshShopName();
+        } catch (e) { U.toast('불러오기 실패: ' + e.message); }
+      };
+      reader.readAsText(f);
+      file.value = '';
+    };
+
+    U.$('#seedBtn', view).onclick = function () {
+      if (!U.confirmBox('예시 데이터를 추가할까요? (기존 자료는 지워지지 않아요)')) return;
+      Seed.install(); U.toast('예시 데이터를 넣었어요'); App.render();
+    };
+
+    U.$('#resetBtn', view).onclick = function () {
+      if (!U.confirmBox('정말 모든 자료를 지울까요? 되돌릴 수 없습니다.')) return;
+      if (!U.confirmBox('마지막 확인입니다. 백업 파일은 받으셨나요?')) return;
+      DB.clearAll(); DB.write('seeded', true);
+      U.toast('초기화했어요'); App.render(); App.refreshShopName();
+    };
+  }
+
+  return { render: render };
+})();
+
+/* ===== js/home.js ===== */
+/* 홈 - 오늘 할 일 한눈에 보기 */
+window.Home = (function () {
+
+  function render(view) {
+    var today = U.today();
+    var tomorrow = U.addDays(today, 1);
+    var month = U.thisMonth();
+    var todayList = Orders.byDate(today).filter(function (o) { return o.status !== 'canceled'; });
+    var tomorrowList = Orders.byDate(tomorrow).filter(function (o) { return o.status !== 'canceled'; });
+    var live = Orders.byMonth(month).filter(function (o) { return o.status !== 'canceled'; });
+    var sales = live.reduce(function (a, o) { return a + U.toNum(o.price); }, 0);
+    var cost = live.reduce(function (a, o) { return a + U.toNum(o.cost); }, 0);
+    var q = Notify.queue();
+    var notifyCount = Notify.STAGES.reduce(function (a, s) { return a + q[s.key].length; }, 0);
+    var lowStock = DB.list('inventory').filter(Inventory.isLow);
+
+    view.innerHTML = '' +
+      '<div class="card">' +
+        '<h2>👋 오늘도 좋은 하루 되세요!</h2>' +
+        '<div class="grid four">' +
+          tile('오늘 픽업', todayList.length + '건', todayList.length ? 'rose' : '') +
+          tile('내일 픽업', tomorrowList.length + '건', '') +
+          tile(U.monthTitle(month) + ' 매출', U.won(sales), 'mint') +
+          tile('보낼 알림', notifyCount + '건', notifyCount ? 'amber' : '') +
+        '</div>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<h2>🎂 오늘 픽업 (' + U.korDateFull(today) + ')</h2>' +
+        (todayList.length ? list(todayList) : '<div class="empty">오늘 픽업 예정인 케이크가 없어요.</div>') +
+      '</div>' +
+
+      '<div class="card">' +
+        '<h2>⏰ 내일 준비할 것</h2>' +
+        (tomorrowList.length ? list(tomorrowList) : '<div class="empty">내일 픽업 예정이 없어요.</div>') +
+      '</div>' +
+
+      '<div class="card">' +
+        '<h2>📊 이번 달 요약</h2>' +
+        '<div class="grid four">' +
+          tile('주문', live.length + '건', '') +
+          tile('매출', U.won(sales), 'rose') +
+          tile('원가', U.won(cost), 'amber') +
+          tile('이익', U.won(sales - cost), 'mint') +
+        '</div>' +
+        '<div class="row" style="margin-top:12px"><button class="btn ghost small" data-go="monthly">월별정산 자세히 보기 →</button></div>' +
+      '</div>' +
+
+      (lowStock.length ? '<div class="card"><h2>📦 재고가 부족해요</h2>' +
+        '<div class="warn">' + lowStock.map(function (i) {
+          return U.esc(i.name) + ' <b>' + U.num(i.qty) + U.esc(i.unit || '개') + '</b> 남음';
+        }).join('<br>') + '</div>' +
+        '<div class="row" style="margin-top:12px"><button class="btn ghost small" data-go="inventory">재고 관리로 가기 →</button></div></div>' : '') +
+
+      '<div class="card">' +
+        '<h2>⚡ 바로 가기</h2>' +
+        '<div class="row">' +
+          '<button class="btn" data-go="orders">📝 주문 등록</button>' +
+          '<button class="btn ghost" data-go="cost">🧮 원가 계산</button>' +
+          '<button class="btn ghost" data-go="notify">💬 알림 보내기</button>' +
+          '<button class="btn ghost" data-go="gallery">🖼️ 갤러리</button>' +
+        '</div>' +
+      '</div>';
+
+    view.addEventListener('click', function (e) {
+      if (e.target.dataset.go) location.hash = '#' + e.target.dataset.go;
+    });
+  }
+
+  function tile(label, value, cls) {
+    return '<div class="stat ' + cls + '"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>';
+  }
+
+  function list(orders) {
+    return '<div class="table-wrap"><table><thead><tr><th>시간</th><th>고객</th><th>주문내용</th><th class="num">잔금</th><th>상태</th></tr></thead><tbody>' +
+      orders.map(function (o) {
+        var rest = Math.max(0, U.toNum(o.price) - U.toNum(o.deposit));
+        return '<tr><td><b>' + U.esc(o.pickupTime || '-') + '</b></td>' +
+          '<td>' + U.esc(o.customerName) + '<br><span class="cap-sub">' + U.esc(U.phone(o.phone)) + '</span></td>' +
+          '<td>' + U.esc(o.request || '') + (o.note ? '<br><span class="cap-sub">📌 ' + U.esc(o.note) + '</span>' : '') + '</td>' +
+          '<td class="num">' + U.won(rest) + '</td>' +
+          '<td><span class="badge ' + Orders.statusCls(o.status) + '">' + Orders.statusText(o.status) + '</span></td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+
+  return { render: render };
+})();
+
+/* ===== js/app.js ===== */
+/* 화면 전환(라우터) + 시작 */
+window.App = (function () {
+
+  var ROUTES = {
+    home: Home,
+    orders: Orders,
+    monthly: Monthly,
+    inventory: Inventory,
+    gallery: Gallery,
+    cost: Cost,
+    notify: Notify,
+    settings: Settings
+  };
+
+  function current() {
+    var r = (location.hash || '#home').slice(1);
+    return ROUTES[r] ? r : 'home';
+  }
+
+  function render() {
+    var route = current();
+    // 화면을 새 요소로 갈아끼웁니다.
+    // (이전 화면에 붙여둔 클릭 이벤트가 쌓여서 두 번씩 실행되는 것을 막기 위함)
+    var old = U.$('#view');
+    var view = document.createElement('main');
+    view.id = 'view';
+    view.className = 'view';
+    old.parentNode.replaceChild(view, old);
+    U.$$('#tabs button').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.route === route);
+    });
+    try {
+      ROUTES[route].render(view);
+    } catch (e) {
+      view.innerHTML = '<div class="card"><h2>문제가 생겼어요</h2><p class="hint">' +
+        U.esc(e.message) + '</p><button class="btn ghost" onclick="location.hash=\'#home\'">홈으로</button></div>';
+      console.error(e);
+    }
+    refreshShopName();
+    window.scrollTo({ top: 0 });
+  }
+
+  function refreshShopName() {
+    var s = DB.settings();
+    var name = s.shopName || '케이크 공방';
+    U.$('#shopName').textContent = name;
+    // 보낼 알림이 있으면 브라우저 탭 제목에 건수를 붙여 놓치지 않게 함
+    var n = 0;
+    try { n = Notify.totalCount(); } catch (e) { n = 0; }
+    document.title = (n ? '(' + n + ') ' : '') + name + ' 운영 노트';
+  }
+
+  function start() {
+    Seed.installIfEmpty();
+    refreshShopName();
+    U.$('#todayLabel').textContent = U.korDateFull(U.today());
+
+    U.$$('#tabs button').forEach(function (b) {
+      b.onclick = function () { location.hash = '#' + b.dataset.route; };
+    });
+    window.addEventListener('hashchange', render);
+
+    U.$('#modalClose').onclick = U.closeModal;
+    U.$('#modal').addEventListener('click', function (e) {
+      if (e.target.id === 'modal') U.closeModal();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !U.$('#modal').hidden) U.closeModal();
+    });
+
+    if (!DB.storageOk) {
+      U.toast('저장이 안 되는 환경이에요. 설정 화면의 안내를 확인해 주세요.');
+    }
+    render();
+  }
+
+  // 화면이 이미 준비된 뒤에 불러와도 정상 동작하도록
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+
+  return { render: render, refreshShopName: refreshShopName };
+})();
+
+</script>
+</body>
+</html>

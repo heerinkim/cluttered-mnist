@@ -52,6 +52,8 @@ window.Home = (function () {
         }).join('<br>') + '</div>' +
         '<div class="row" style="margin-top:12px"><button class="btn ghost small" data-go="inventory">재고 관리로 가기 →</button></div></div>' : '') +
 
+      backupReminder() +
+
       '<div class="card">' +
         '<h2>⚡ 바로 가기</h2>' +
         '<div class="row">' +
@@ -69,6 +71,20 @@ window.Home = (function () {
 
   function tile(label, value, cls) {
     return '<div class="stat ' + cls + '"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>';
+  }
+
+  // 백업한 지 오래됐으면 알려줍니다 (자료를 잃지 않는 게 제일 중요해서)
+  function backupReminder() {
+    var last = Cloud.cfg().lastSyncAt;
+    var days = last ? U.diffDays(last.slice(0, 10), U.today()) : 999;
+    if (days < 3) return '';
+    var msg = !last
+      ? '아직 깃허브에 백업한 적이 없어요. 컴퓨터가 고장 나면 자료가 사라집니다.'
+      : '마지막 백업이 <b>' + days + '일 전</b>이에요. 오늘 자료를 올려두세요.';
+    return '<div class="card"><h2>☁️ 백업하셨나요?</h2>' +
+      '<div class="warn">' + msg + '</div>' +
+      '<div class="row" style="margin-top:12px">' +
+      '<button class="btn" data-go="settings">지금 백업하러 가기 →</button></div></div>';
   }
 
   function list(orders) {

@@ -15,7 +15,41 @@ window.Cloud = (function () {
   function saveCfg(c) { return DB.write('github', Object.assign(cfg(), c)); }
   // 토큰은 별도 키에 저장 -> 백업 파일(exportAll)에 섞여 나가지 않음
   function token() { return DB.read('githubToken', ''); }
-  function saveToken(t) { DB.write('githubToken', String(t || '').trim()); }
+  function saveToken(t) { DB.write('githubToken', cleanToken(t)); }
+
+  /* ---------- 토큰 다듬기 / 확인 ----------
+     붙여넣을 때 따라오는 빈칸·줄바꿈·따옴표·보이지 않는 문자를 걷어냅니다. */
+  function cleanToken(raw) {
+    return String(raw || '')
+      .replace(/^\s*bearer\s+/i, '')          // "Bearer " 를 같이 복사한 경우
+      .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '')   // 눈에 안 보이는 문자 (제로폭 문자, 줄바꿈 없는 공백)
+      .replace(/["'`]/g, '')                  // 따옴표
+      .replace(/\s+/g, '');                   // 모든 빈칸·줄바꿈 (토큰에는 빈칸이 없음)
+  }
+
+  // 토큰이 "모양이라도 맞는지" 미리 확인 (깃허브에 물어보기 전에)
+  function tokenInfo(raw) {
+    var t = cleanToken(raw);
+    if (!t) return { ok: false, kind: 'none', len: 0, msg: '토큰이 비어 있어요.' };
+    if (/^github_pat_[A-Za-z0-9_]{20,}$/.test(t)) return { ok: true, kind: '세밀한 토큰 (fine-grained)', len: t.length };
+    if (/^ghp_[A-Za-z0-9]{30,}$/.test(t)) return { ok: true, kind: '옛날 방식 토큰 (classic)', len: t.length };
+    if (/^[0-9a-f]{40}$/i.test(t)) return { ok: true, kind: '옛날 방식 토큰 (classic)', len: t.length };
+    if (/^github_pat_/.test(t)) {
+      return { ok: false, kind: 'short', len: t.length,
+               msg: '토큰이 중간에 잘린 것 같아요. github_pat_ 로 시작하는 건 맞지만 길이가 너무 짧습니다 (' + t.length + '자). 보통 90자가 넘습니다.' };
+    }
+    return { ok: false, kind: 'unknown', len: t.length,
+             msg: '토큰 모양이 아니에요 (' + t.length + '자). 토큰은 보통 github_pat_ 으로 시작합니다. ' +
+                  '저장소 주소나 토큰 이름을 잘못 붙여넣지 않았는지 확인해 주세요.' };
+  }
+
+  // 화면에 보여줄 때 가운데를 가림
+  function maskToken(raw) {
+    var t = cleanToken(raw);
+    if (!t) return '(비어 있음)';
+    if (t.length <= 18) return t.slice(0, 4) + '…' + t.slice(-2);
+    return t.slice(0, 14) + '…' + t.slice(-4);
+  }
   function configured() { return !!(cfg().repo && token()); }
 
   /* ---------- 글자 <-> base64 (한글 안전) ---------- */
@@ -259,6 +293,7 @@ window.Cloud = (function () {
 
   return {
     cfg: cfg, saveCfg: saveCfg, token: token, saveToken: saveToken, configured: configured,
+    cleanToken: cleanToken, tokenInfo: tokenInfo, maskToken: maskToken,
     check: check, diagnose: diagnose, upload: upload, download: download, lastSyncText: lastSyncText,
     DATA_PATH: DATA_PATH
   };

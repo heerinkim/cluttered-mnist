@@ -2676,7 +2676,41 @@ window.Cloud = (function () {
   function saveCfg(c) { return DB.write('github', Object.assign(cfg(), c)); }
   // 토큰은 별도 키에 저장 -> 백업 파일(exportAll)에 섞여 나가지 않음
   function token() { return DB.read('githubToken', ''); }
-  function saveToken(t) { DB.write('githubToken', String(t || '').trim()); }
+  function saveToken(t) { DB.write('githubToken', cleanToken(t)); }
+
+  /* ---------- 토큰 다듬기 / 확인 ----------
+     붙여넣을 때 따라오는 빈칸·줄바꿈·따옴표·보이지 않는 문자를 걷어냅니다. */
+  function cleanToken(raw) {
+    return String(raw || '')
+      .replace(/^\s*bearer\s+/i, '')          // "Bearer " 를 같이 복사한 경우
+      .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '')   // 눈에 안 보이는 문자 (제로폭 문자, 줄바꿈 없는 공백)
+      .replace(/["'`]/g, '')                  // 따옴표
+      .replace(/\s+/g, '');                   // 모든 빈칸·줄바꿈 (토큰에는 빈칸이 없음)
+  }
+
+  // 토큰이 "모양이라도 맞는지" 미리 확인 (깃허브에 물어보기 전에)
+  function tokenInfo(raw) {
+    var t = cleanToken(raw);
+    if (!t) return { ok: false, kind: 'none', len: 0, msg: '토큰이 비어 있어요.' };
+    if (/^github_pat_[A-Za-z0-9_]{20,}$/.test(t)) return { ok: true, kind: '세밀한 토큰 (fine-grained)', len: t.length };
+    if (/^ghp_[A-Za-z0-9]{30,}$/.test(t)) return { ok: true, kind: '옛날 방식 토큰 (classic)', len: t.length };
+    if (/^[0-9a-f]{40}$/i.test(t)) return { ok: true, kind: '옛날 방식 토큰 (classic)', len: t.length };
+    if (/^github_pat_/.test(t)) {
+      return { ok: false, kind: 'short', len: t.length,
+               msg: '토큰이 중간에 잘린 것 같아요. github_pat_ 로 시작하는 건 맞지만 길이가 너무 짧습니다 (' + t.length + '자). 보통 90자가 넘습니다.' };
+    }
+    return { ok: false, kind: 'unknown', len: t.length,
+             msg: '토큰 모양이 아니에요 (' + t.length + '자). 토큰은 보통 github_pat_ 으로 시작합니다. ' +
+                  '저장소 주소나 토큰 이름을 잘못 붙여넣지 않았는지 확인해 주세요.' };
+  }
+
+  // 화면에 보여줄 때 가운데를 가림
+  function maskToken(raw) {
+    var t = cleanToken(raw);
+    if (!t) return '(비어 있음)';
+    if (t.length <= 18) return t.slice(0, 4) + '…' + t.slice(-2);
+    return t.slice(0, 14) + '…' + t.slice(-4);
+  }
   function configured() { return !!(cfg().repo && token()); }
 
   /* ---------- 글자 <-> base64 (한글 안전) ---------- */
@@ -2920,6 +2954,7 @@ window.Cloud = (function () {
 
   return {
     cfg: cfg, saveCfg: saveCfg, token: token, saveToken: saveToken, configured: configured,
+    cleanToken: cleanToken, tokenInfo: tokenInfo, maskToken: maskToken,
     check: check, diagnose: diagnose, upload: upload, download: download, lastSyncText: lastSyncText,
     DATA_PATH: DATA_PATH
   };
@@ -3018,9 +3053,12 @@ window.Settings = (function () {
       '<div class="grid two" style="margin-top:12px">' +
         '<div class="field"><label>저장소 (아이디/저장소이름)</label>' +
           '<input id="ghRepo" value="' + U.esc(c.repo || '') + '" placeholder="heerinkim/cake-shop-data" autocomplete="off"></div>' +
-        '<div class="field"><label>토큰 (Personal access token)</label>' +
-          '<input id="ghToken" type="password" value="' + U.esc(Cloud.token()) + '" placeholder="github_pat_..." autocomplete="off"></div>' +
+        '<div class="field"><label>토큰 (Personal access token) ' +
+            '<button type="button" class="btn ghost small" id="ghEye" style="padding:1px 8px;font-size:11px">👁 보기</button></label>' +
+          '<input id="ghToken" type="password" value="' + U.esc(Cloud.token()) + '" placeholder="github_pat_..." ' +
+            'autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore></div>' +
       '</div>' +
+      '<div id="ghTokenInfo">' + tokenInfoHtml() + '</div>' +
       '<p class="hint">토큰은 <b>이 컴퓨터에만</b> 저장되고 백업 파일에는 들어가지 않습니다. ' +
       '만드는 방법은 아래 [발급 방법 보기]를 눌러주세요.</p>' +
 
@@ -3054,6 +3092,20 @@ window.Settings = (function () {
         '<div class="row"><button class="btn ghost small" id="ghOpenRepo">내 저장소 열기</button></div>' +
       '</details>' +
     '</div>';
+  }
+
+  // 붙여넣은 토큰이 제대로 들어갔는지 눈으로 확인시켜 줍니다
+  function tokenInfoHtml(raw) {
+    var t = raw === undefined ? Cloud.token() : raw;
+    if (!t) return '';
+    var info = Cloud.tokenInfo(t);
+    if (info.ok) {
+      return '<div class="info">✅ 토큰 모양은 정상이에요 — <b>' + U.esc(info.kind) + '</b> · ' +
+        info.len + '자 · <code>' + U.esc(Cloud.maskToken(t)) + '</code><br>' +
+        '<span class="cap-sub">모양이 맞아도 만료되었거나 권한이 없으면 연결에 실패할 수 있어요.</span></div>';
+    }
+    return '<div class="warn">⚠️ ' + U.esc(info.msg) +
+      (info.len ? '<br>지금 들어 있는 값: <code>' + U.esc(Cloud.maskToken(t)) + '</code>' : '') + '</div>';
   }
 
   function tokenHelp() {
@@ -3109,6 +3161,18 @@ window.Settings = (function () {
       saveFields(); U.toast('저장했어요'); App.render();
     };
     U.$('#ghHelp', view).onclick = tokenHelp;
+
+    // 토큰을 눈으로 확인 (붙여넣기가 제대로 됐는지 보려고)
+    var eye = U.$('#ghEye', view), tokenBox = U.$('#ghToken', view);
+    eye.onclick = function () {
+      var showing = tokenBox.type === 'text';
+      tokenBox.type = showing ? 'password' : 'text';
+      eye.textContent = showing ? '👁 보기' : '🙈 가리기';
+    };
+    // 붙여넣는 즉시 모양을 확인해 줍니다
+    tokenBox.addEventListener('input', function () {
+      U.$('#ghTokenInfo', view).innerHTML = tokenInfoHtml(tokenBox.value);
+    });
     U.$('#ghOpenRepo', view).onclick = function () {
       var repo = U.$('#ghRepo', view).value.trim();
       if (!repo) { U.toast('저장소 이름을 먼저 넣어주세요'); return; }
@@ -3175,9 +3239,24 @@ window.Settings = (function () {
     if (d.reason === 'no-token') return '<div class="warn">토큰을 먼저 넣고 [설정 저장]을 눌러주세요.</div>';
     if (d.reason === 'network') return '<div class="warn" style="white-space:pre-wrap">' + U.esc(d.message || '깃허브에 연결하지 못했어요.') + '</div>';
     if (d.reason === 'bad-token') {
-      return '<div class="warn"><b>토큰이 잘못되었거나 만료됐어요.</b><br>' +
-        '토큰을 만들 때 나온 <code>github_pat_...</code> 글자를 <b>처음부터 끝까지</b> 복사했는지 확인해 주세요. ' +
-        '앞뒤에 빈칸이 붙어도 안 됩니다. 잘 모르겠으면 <b>토큰을 새로 만드는 게 가장 빠릅니다.</b></div>';
+      var info = Cloud.tokenInfo(Cloud.token());
+      return '<div class="warn">' +
+        '<b>깃허브가 이 토큰을 받아주지 않았어요.</b><br>' +
+        '지금 들어 있는 값: <code>' + U.esc(Cloud.maskToken(Cloud.token())) + '</code> (' + info.len + '자)<br><br>' +
+        (info.ok
+          ? '모양은 맞으니 <b>토큰이 만료됐거나 삭제된 것</b>일 가능성이 큽니다.<br>'
+          : '<b>' + U.esc(info.msg) + '</b><br>') +
+        '<b>이 순서로 확인해 보세요</b><br>' +
+        '① 토큰 목록에서 만든 토큰이 <b>Expired(만료)</b> 로 표시돼 있지 않은지<br>' +
+        '② 만들 때 <b>Generate token</b> 을 눌러 나온 화면의 <b>복사 아이콘</b>으로 복사했는지 ' +
+        '(화면의 글자를 마우스로 긁으면 일부만 복사될 수 있어요)<br>' +
+        '③ 위 토큰 칸의 <b>[👁 보기]</b> 를 눌러 <code>github_pat_</code> 로 시작하고 뒤가 잘리지 않았는지<br><br>' +
+        '👉 <b>가장 빠른 해결은 토큰을 새로 하나 만드는 것입니다.</b> 몇 개를 만들어도 괜찮아요.' +
+        '</div>' +
+        '<div class="row" style="margin-top:10px">' +
+          '<button class="btn ghost small" data-open="https://github.com/settings/personal-access-tokens">내 토큰 목록 (만료 확인)</button>' +
+          '<button class="btn small" data-open="https://github.com/settings/personal-access-tokens/new">토큰 새로 만들기</button>' +
+        '</div>';
     }
 
     var head = '<div class="info">✅ 토큰은 정상입니다. 깃허브 아이디: <b>' + U.esc(d.login) + '</b></div>';

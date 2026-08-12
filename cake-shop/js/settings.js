@@ -90,9 +90,12 @@ window.Settings = (function () {
       '<div class="grid two" style="margin-top:12px">' +
         '<div class="field"><label>저장소 (아이디/저장소이름)</label>' +
           '<input id="ghRepo" value="' + U.esc(c.repo || '') + '" placeholder="heerinkim/cake-shop-data" autocomplete="off"></div>' +
-        '<div class="field"><label>토큰 (Personal access token)</label>' +
-          '<input id="ghToken" type="password" value="' + U.esc(Cloud.token()) + '" placeholder="github_pat_..." autocomplete="off"></div>' +
+        '<div class="field"><label>토큰 (Personal access token) ' +
+            '<button type="button" class="btn ghost small" id="ghEye" style="padding:1px 8px;font-size:11px">👁 보기</button></label>' +
+          '<input id="ghToken" type="password" value="' + U.esc(Cloud.token()) + '" placeholder="github_pat_..." ' +
+            'autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore></div>' +
       '</div>' +
+      '<div id="ghTokenInfo">' + tokenInfoHtml() + '</div>' +
       '<p class="hint">토큰은 <b>이 컴퓨터에만</b> 저장되고 백업 파일에는 들어가지 않습니다. ' +
       '만드는 방법은 아래 [발급 방법 보기]를 눌러주세요.</p>' +
 
@@ -126,6 +129,20 @@ window.Settings = (function () {
         '<div class="row"><button class="btn ghost small" id="ghOpenRepo">내 저장소 열기</button></div>' +
       '</details>' +
     '</div>';
+  }
+
+  // 붙여넣은 토큰이 제대로 들어갔는지 눈으로 확인시켜 줍니다
+  function tokenInfoHtml(raw) {
+    var t = raw === undefined ? Cloud.token() : raw;
+    if (!t) return '';
+    var info = Cloud.tokenInfo(t);
+    if (info.ok) {
+      return '<div class="info">✅ 토큰 모양은 정상이에요 — <b>' + U.esc(info.kind) + '</b> · ' +
+        info.len + '자 · <code>' + U.esc(Cloud.maskToken(t)) + '</code><br>' +
+        '<span class="cap-sub">모양이 맞아도 만료되었거나 권한이 없으면 연결에 실패할 수 있어요.</span></div>';
+    }
+    return '<div class="warn">⚠️ ' + U.esc(info.msg) +
+      (info.len ? '<br>지금 들어 있는 값: <code>' + U.esc(Cloud.maskToken(t)) + '</code>' : '') + '</div>';
   }
 
   function tokenHelp() {
@@ -181,6 +198,18 @@ window.Settings = (function () {
       saveFields(); U.toast('저장했어요'); App.render();
     };
     U.$('#ghHelp', view).onclick = tokenHelp;
+
+    // 토큰을 눈으로 확인 (붙여넣기가 제대로 됐는지 보려고)
+    var eye = U.$('#ghEye', view), tokenBox = U.$('#ghToken', view);
+    eye.onclick = function () {
+      var showing = tokenBox.type === 'text';
+      tokenBox.type = showing ? 'password' : 'text';
+      eye.textContent = showing ? '👁 보기' : '🙈 가리기';
+    };
+    // 붙여넣는 즉시 모양을 확인해 줍니다
+    tokenBox.addEventListener('input', function () {
+      U.$('#ghTokenInfo', view).innerHTML = tokenInfoHtml(tokenBox.value);
+    });
     U.$('#ghOpenRepo', view).onclick = function () {
       var repo = U.$('#ghRepo', view).value.trim();
       if (!repo) { U.toast('저장소 이름을 먼저 넣어주세요'); return; }
@@ -247,9 +276,24 @@ window.Settings = (function () {
     if (d.reason === 'no-token') return '<div class="warn">토큰을 먼저 넣고 [설정 저장]을 눌러주세요.</div>';
     if (d.reason === 'network') return '<div class="warn" style="white-space:pre-wrap">' + U.esc(d.message || '깃허브에 연결하지 못했어요.') + '</div>';
     if (d.reason === 'bad-token') {
-      return '<div class="warn"><b>토큰이 잘못되었거나 만료됐어요.</b><br>' +
-        '토큰을 만들 때 나온 <code>github_pat_...</code> 글자를 <b>처음부터 끝까지</b> 복사했는지 확인해 주세요. ' +
-        '앞뒤에 빈칸이 붙어도 안 됩니다. 잘 모르겠으면 <b>토큰을 새로 만드는 게 가장 빠릅니다.</b></div>';
+      var info = Cloud.tokenInfo(Cloud.token());
+      return '<div class="warn">' +
+        '<b>깃허브가 이 토큰을 받아주지 않았어요.</b><br>' +
+        '지금 들어 있는 값: <code>' + U.esc(Cloud.maskToken(Cloud.token())) + '</code> (' + info.len + '자)<br><br>' +
+        (info.ok
+          ? '모양은 맞으니 <b>토큰이 만료됐거나 삭제된 것</b>일 가능성이 큽니다.<br>'
+          : '<b>' + U.esc(info.msg) + '</b><br>') +
+        '<b>이 순서로 확인해 보세요</b><br>' +
+        '① 토큰 목록에서 만든 토큰이 <b>Expired(만료)</b> 로 표시돼 있지 않은지<br>' +
+        '② 만들 때 <b>Generate token</b> 을 눌러 나온 화면의 <b>복사 아이콘</b>으로 복사했는지 ' +
+        '(화면의 글자를 마우스로 긁으면 일부만 복사될 수 있어요)<br>' +
+        '③ 위 토큰 칸의 <b>[👁 보기]</b> 를 눌러 <code>github_pat_</code> 로 시작하고 뒤가 잘리지 않았는지<br><br>' +
+        '👉 <b>가장 빠른 해결은 토큰을 새로 하나 만드는 것입니다.</b> 몇 개를 만들어도 괜찮아요.' +
+        '</div>' +
+        '<div class="row" style="margin-top:10px">' +
+          '<button class="btn ghost small" data-open="https://github.com/settings/personal-access-tokens">내 토큰 목록 (만료 확인)</button>' +
+          '<button class="btn small" data-open="https://github.com/settings/personal-access-tokens/new">토큰 새로 만들기</button>' +
+        '</div>';
     }
 
     var head = '<div class="info">✅ 토큰은 정상입니다. 깃허브 아이디: <b>' + U.esc(d.login) + '</b></div>';

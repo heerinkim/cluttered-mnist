@@ -119,6 +119,41 @@ window.Cloud = (function () {
     });
   }
 
+  /* ---------- 자세히 진단하기 ----------
+     깃허브는 "권한이 없는 저장소"도 "없는 저장소"라고 답합니다(404).
+     그래서 이름이 맞는데도 못 찾는다고 나올 수 있어, 원인을 직접 찾아봅니다. */
+  function diagnose() {
+    var out = {
+      tokenOk: false, login: '', target: cfg().repo,
+      repos: [], targetOk: false, ownerMismatch: false, reason: ''
+    };
+    if (!token()) { out.reason = 'no-token'; return Promise.resolve(out); }
+
+    return api('/user').then(function (u) {
+      out.tokenOk = true;
+      out.login = u.login || '';
+      var owner = String(out.target).split('/')[0] || '';
+      out.ownerMismatch = !!(owner && out.login && owner.toLowerCase() !== out.login.toLowerCase());
+      // 이 토큰이 실제로 볼 수 있는 저장소 목록
+      return api('/user/repos?per_page=100&sort=updated').catch(function () { return []; });
+    }).then(function (arr) {
+      out.repos = (arr || []).map(function (r) {
+        return { full_name: r.full_name, isPrivate: !!r.private };
+      });
+      out.targetOk = out.repos.some(function (r) {
+        return r.full_name.toLowerCase() === String(out.target).toLowerCase();
+      });
+      if (!out.repos.length) out.reason = 'no-repos';
+      else if (!out.targetOk) out.reason = 'not-in-list';
+      else out.reason = 'ok';
+      return out;
+    }).catch(function (e) {
+      out.reason = e.status === 401 ? 'bad-token' : 'network';
+      out.message = e.message;
+      return out;
+    });
+  }
+
   /* ---------- 올리기 ---------- */
   function upload(onStep) {
     var step = onStep || function () {};
@@ -224,7 +259,7 @@ window.Cloud = (function () {
 
   return {
     cfg: cfg, saveCfg: saveCfg, token: token, saveToken: saveToken, configured: configured,
-    check: check, upload: upload, download: download, lastSyncText: lastSyncText,
+    check: check, diagnose: diagnose, upload: upload, download: download, lastSyncText: lastSyncText,
     DATA_PATH: DATA_PATH
   };
 })();

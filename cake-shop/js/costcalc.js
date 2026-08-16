@@ -141,6 +141,20 @@ window.Cost = (function () {
     };
   }
 
+  /* 주문 한 건의 원가를 구합니다.
+     - 주문서에 원가를 직접 적어두었으면 그 값을 씁니다 (사장님이 적은 값이 우선)
+     - 비어 있으면 원가표에서 찾아 계산합니다 */
+  function orderCost(order) {
+    var stored = U.toNum(order && order.cost);
+    if (stored > 0) return { value: stored, from: 'order' };
+
+    var r = calcFromText((order && order.request) || '');
+    if (r.ok) {
+      return { value: Math.round(r.total / 10) * 10, from: 'menu', name: r.name, source: r.source };
+    }
+    return { value: 0, from: 'none' };
+  }
+
   /* ================= 화면 ================= */
 
   function render(view) {
@@ -618,7 +632,7 @@ window.Cost = (function () {
   }
 
   return {
-    render: render, calcFromText: calcFromText, recipeCost: recipeCost,
+    render: render, calcFromText: calcFromText, orderCost: orderCost, recipeCost: recipeCost,
     unitCost: unitCost, suggestPrice: suggestPrice
   };
 })();

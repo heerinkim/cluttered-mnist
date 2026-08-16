@@ -9,7 +9,8 @@ window.Home = (function () {
     var tomorrowList = Orders.byDate(tomorrow).filter(function (o) { return o.status !== 'canceled'; });
     var live = Orders.byMonth(month).filter(function (o) { return o.status !== 'canceled'; });
     var sales = live.reduce(function (a, o) { return a + U.toNum(o.price); }, 0);
-    var cost = live.reduce(function (a, o) { return a + U.toNum(o.cost); }, 0);
+    // 원가는 월별정산과 똑같은 기준으로 (주문서 값 우선, 없으면 원가표에서)
+    var cost = live.reduce(function (a, o) { return a + Cost.orderCost(o).value; }, 0);
     var q = Notify.queue();
     var notifyCount = Notify.STAGES.reduce(function (a, s) { return a + q[s.key].length; }, 0);
     var lowStock = DB.list('inventory').filter(Inventory.isLow);

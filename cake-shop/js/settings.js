@@ -69,10 +69,12 @@ window.Settings = (function () {
   function cloudCard() {
     var c = Cloud.cfg();
     var chk = c.lastCheck;
+    var readOnly = Cloud.isReadOnly();
     var statusHtml = '';
     if (chk) {
       statusHtml = chk.isPrivate
-        ? '<div class="info">✅ <b>' + U.esc(chk.name) + '</b> — 비공개 저장소로 확인됐어요. 안심하고 쓰셔도 됩니다.</div>'
+        ? '<div class="info">✅ <b>' + U.esc(chk.name) + '</b> — 비공개 저장소로 확인됐어요. 안심하고 쓰셔도 됩니다.' +
+          (readOnly ? '<br>👀 이 토큰은 <b>보기 전용</b>입니다. 자료를 <b>볼 수만</b> 있고 저장은 안 됩니다.' : '') + '</div>'
         : '<div class="warn">🚨 <b>' + U.esc(chk.name) + '</b> 는 <b>공개(Public)</b> 저장소입니다. ' +
           '고객 이름·전화번호가 전 세계에 공개되므로 <b>저장이 막혀 있습니다.</b> ' +
           '깃허브에서 <b>비공개(Private)</b> 저장소를 새로 만들어 주세요.</div>';
@@ -109,9 +111,18 @@ window.Settings = (function () {
 
       '<div class="divider"></div>' +
       '<div class="row">' +
-        '<button class="btn" id="ghUpload">⬆️ 깃허브에 저장</button>' +
+        (readOnly
+          ? '<span class="badge amber">보기 전용이라 저장 버튼은 사용할 수 없어요</span>'
+          : '<button class="btn" id="ghUpload">⬆️ 깃허브에 저장</button>') +
         '<button class="btn ghost" id="ghDownload">⬇️ 깃허브에서 불러오기</button>' +
+        '<button class="btn ghost" id="ghShare">👥 알바생에게 공유하기</button>' +
       '</div>' +
+      '<label class="row" style="margin-top:10px;font-weight:500;cursor:pointer">' +
+        '<input type="checkbox" id="ghAuto" style="width:auto"' + (c.autoPull ? ' checked' : '') + '>' +
+        '<span>앱을 열 때마다 깃허브에서 <b>최신 자료를 자동으로 불러오기</b>' +
+        '<br><span class="cap-sub">알바생 컴퓨터에서 켜두면 항상 최신 주문을 봅니다. ' +
+        '사장님 컴퓨터에서는 <b>꺼두세요</b> (입력 중인 자료가 덮어써질 수 있어요)</span></span>' +
+      '</label>' +
       '<p class="hint" style="margin-top:8px">마지막으로 깃허브에 저장한 때: <b>' + U.esc(Cloud.lastSyncText()) + '</b></p>' +
       '<div id="ghProgress"></div>' +
 
@@ -143,6 +154,75 @@ window.Settings = (function () {
     }
     return '<div class="warn">⚠️ ' + U.esc(info.msg) +
       (info.len ? '<br>지금 들어 있는 값: <code>' + U.esc(Cloud.maskToken(t)) + '</code>' : '') + '</div>';
+  }
+
+  /* ---------- 알바생에게 공유하기 ---------- */
+  function shareHelp() {
+    var repo = Cloud.cfg().repo || '아이디/cake-shop-data';
+    var owner = String(repo).split('/')[0];
+    var pagesUrl = 'https://' + owner + '.github.io/cluttered-mnist/cake-shop/';
+
+    function guideText(link) {
+      return '[' + (DB.settings().shopName || '케이크 공방') + '] 주문 확인 방법\n\n' +
+        '1) 아래 주소를 눌러 주세요\n' + link + '\n\n' +
+        '2) 맨 위 [⚙️ 설정] 을 누르고 아래로 내려서 [☁️ 깃허브 백업] 을 찾으세요\n\n' +
+        '3) 아래 두 가지를 그대로 넣어주세요\n' +
+        '   · 저장소: ' + repo + '\n' +
+        '   · 토큰: (여기에 사장님이 알려준 보기 전용 토큰을 붙여넣기)\n\n' +
+        '4) [설정 저장] → [⬇️ 깃허브에서 불러오기] 를 누르면 주문이 보입니다\n\n' +
+        '5) "앱을 열 때마다 최신 자료 자동으로 불러오기" 를 체크해 두면 편합니다\n\n' +
+        '※ 보기 전용이라 자료를 바꾸거나 지울 수 없으니 안심하고 눌러보세요.';
+    }
+
+    U.modal('👥 알바생에게 공유하기', '' +
+      '<p class="hint">알바생이 <b>주문·달력·재고를 보기만</b> 할 수 있게 해줍니다. ' +
+      '자료를 바꾸거나 지울 수는 없습니다.</p>' +
+
+      '<div class="warn">🔑 <b>알바생에게는 반드시 "보기 전용" 토큰을 주세요.</b> ' +
+      '사장님이 쓰시는 토큰을 그대로 주면 알바생이 자료를 지울 수도 있습니다.</div>' +
+
+      '<div class="divider"></div>' +
+      '<h3>1단계 — 보기 전용 토큰 만들기</h3>' +
+      '<ol style="padding-left:20px;line-height:1.9">' +
+        '<li>아래 [보기 전용 토큰 만들기] 를 누릅니다</li>' +
+        '<li>이름은 <code>알바생용</code>, Expiration 은 원하는 기간으로</li>' +
+        '<li>Repository access → <b>Only select repositories</b> → <code>' + U.esc(repo.split('/')[1] || 'cake-shop-data') + '</code> 선택</li>' +
+        '<li>Permissions → Repository permissions → <b>Contents</b> 를 ' +
+          '<b style="color:var(--rose-dark)">Read-only</b> 로 (Read and write 아님!)</li>' +
+        '<li>Generate token → 복사</li>' +
+      '</ol>' +
+      '<div class="row"><button class="btn ghost small" data-open="https://github.com/settings/personal-access-tokens/new">보기 전용 토큰 만들기</button></div>' +
+
+      '<div class="divider"></div>' +
+      '<h3>2단계 — 알바생이 열 주소 정하기</h3>' +
+      '<p class="hint">둘 중 편한 방법을 고르세요.</p>' +
+      '<div class="field"><label>방법 A · 인터넷 주소로 열기 (링크 공유, 무료)</label>' +
+        '<input id="shLink" value="' + U.esc(pagesUrl) + '">' +
+        '<p class="hint" style="margin-top:6px">깃허브 저장소 <b>Settings → Pages</b> 에서 브랜치를 고르고 저장하면 만들어지는 주소예요. ' +
+        '앱 화면만 열리고 <b>고객 자료는 들어 있지 않습니다</b>(토큰을 넣어야 보입니다).</p></div>' +
+      '<div class="info">방법 B · <b>파일 그대로 보내기</b> — ' +
+        '<code>케이크공방-운영노트.html</code> 파일을 카톡으로 보내주면, 알바생이 받아서 더블클릭하면 됩니다. ' +
+        '주소를 만들 필요가 없어 더 간단해요.</div>' +
+
+      '<div class="divider"></div>' +
+      '<h3>3단계 — 알바생에게 보낼 안내문</h3>' +
+      '<div class="q-msg" id="shText">' + U.esc(guideText(pagesUrl)) + '</div>' +
+      '<div class="row">' +
+        '<button class="btn" id="shCopy">📋 안내문 복사</button>' +
+        '<button class="btn ghost" id="shClose">닫기</button>' +
+      '</div>' +
+      '<p class="hint" style="margin-top:8px">※ 토큰은 안내문에 넣지 않았습니다. ' +
+      '카톡으로 <b>따로</b> 보내주세요.</p>',
+      function (body) {
+        body.addEventListener('click', function (e) {
+          if (e.target.dataset.open) window.open(e.target.dataset.open, '_blank', 'noopener');
+        });
+        U.$('#shLink', body).addEventListener('input', function () {
+          U.$('#shText', body).textContent = guideText(this.value.trim());
+        });
+        U.$('#shCopy', body).onclick = function () { U.copyText(U.$('#shText', body).textContent); };
+        U.$('#shClose', body).onclick = U.closeModal;
+      });
   }
 
   function tokenHelp() {
@@ -249,7 +329,14 @@ window.Settings = (function () {
       }).catch(function (e) { busy(false); oops(e); });
     };
 
-    U.$('#ghUpload', view).onclick = function () {
+    U.$('#ghShare', view).onclick = shareHelp;
+    U.$('#ghAuto', view).onchange = function () {
+      Cloud.saveCfg({ autoPull: this.checked });
+      U.toast(this.checked ? '앱을 열 때 자동으로 불러옵니다' : '자동 불러오기를 껐어요');
+    };
+
+    var upBtn = U.$('#ghUpload', view);
+    if (upBtn) upBtn.onclick = function () {
       saveFields(); busy(true); step('시작하는 중...');
       Cloud.upload(step).then(function (r) {
         busy(false);

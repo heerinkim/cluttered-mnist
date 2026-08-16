@@ -72,6 +72,21 @@ window.App = (function () {
       U.toast('저장이 안 되는 환경이에요. 설정 화면의 안내를 확인해 주세요.');
     }
     render();
+    autoPull();
+  }
+
+  // "열 때마다 최신 자료 불러오기"를 켜둔 경우 (주로 알바생 컴퓨터)
+  function autoPull() {
+    if (!Cloud.cfg().autoPull || !Cloud.configured()) return;
+    U.toast('최신 자료를 불러오는 중...');
+    Cloud.download(function () {})
+      .then(function (r) {
+        U.toast('최신 자료를 불러왔어요 (주문 ' + r.orders + '건)');
+        render();
+      })
+      .catch(function (e) {
+        U.toast('자동 불러오기 실패 — ' + String(e.message).split('\n')[0]);
+      });
   }
 
   // 화면이 이미 준비된 뒤에 불러와도 정상 동작하도록

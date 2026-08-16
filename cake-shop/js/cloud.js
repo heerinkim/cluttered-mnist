@@ -10,7 +10,12 @@ window.Cloud = (function () {
 
   /* ---------- 설정 ---------- */
   function cfg() {
-    return Object.assign({ repo: '', lastSyncAt: '', lastCheck: null }, DB.read('github', {}));
+    return Object.assign({ repo: '', lastSyncAt: '', lastCheck: null, autoPull: false }, DB.read('github', {}));
+  }
+  // 보기 전용(읽기만 되는) 토큰으로 연결되어 있는지
+  function isReadOnly() {
+    var c = cfg().lastCheck;
+    return !!(c && c.canPush === false);
   }
   function saveCfg(c) { return DB.write('github', Object.assign(cfg(), c)); }
   // 토큰은 별도 키에 저장 -> 백업 파일(exportAll)에 섞여 나가지 않음
@@ -194,7 +199,11 @@ window.Cloud = (function () {
     var c = cfg();
 
     return check().then(function (info) {
-      if (!info.canPush) throw fail('이 저장소에 저장할 권한이 없어요. 토큰 권한을 확인해 주세요.');
+      if (!info.canPush) {
+        throw fail('이 토큰은 <보기 전용>이라서 저장은 할 수 없어요.\n' +
+                   '자료를 보는 것만 가능합니다. 저장까지 하시려면 사장님께 ' +
+                   '"Contents: Read and write" 토큰을 받아야 합니다.');
+      }
       if (!info.isPrivate) {
         throw fail('⚠️ 이 저장소는 "공개(Public)" 입니다. 고객 이름과 전화번호가 전 세계에 공개되므로 올릴 수 없습니다. ' +
                    '깃허브에서 비공개(Private) 저장소를 만들어 그 이름을 넣어주세요.');
@@ -293,6 +302,7 @@ window.Cloud = (function () {
 
   return {
     cfg: cfg, saveCfg: saveCfg, token: token, saveToken: saveToken, configured: configured,
+    isReadOnly: isReadOnly,
     cleanToken: cleanToken, tokenInfo: tokenInfo, maskToken: maskToken,
     check: check, diagnose: diagnose, upload: upload, download: download, lastSyncText: lastSyncText,
     DATA_PATH: DATA_PATH

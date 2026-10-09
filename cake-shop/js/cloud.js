@@ -126,6 +126,50 @@ window.Cloud = (function () {
       });
   }
 
+  // 폴더 안의 파일 목록 (없으면 빈 배열)
+  function listDir(path) {
+    var c = cfg();
+    return api('/repos/' + c.repo + '/contents/' + path + '?ref=' + encodeURIComponent(c.branch || 'main'))
+      .then(function (arr) { return Array.isArray(arr) ? arr : []; })
+      .catch(function (e) { if (e.status === 404) return []; throw e; });
+  }
+
+  /* 백업 파일 찾기
+     앱이 올린 data/backup.json 뿐 아니라, 사장님이 깃허브 웹에서 직접
+     끌어다 올린 "케이크공방_백업_2026-08-20.json" 같은 파일도 찾아냅니다. */
+  function findBackup() {
+    return getFile(DATA_PATH).then(function (f) {
+      if (f) return { file: f, path: DATA_PATH };
+      // 저장소 맨 위와 data 폴더에서 백업처럼 보이는 json 을 찾습니다
+      return Promise.all([listDir(''), listDir('data')]).then(function (lists) {
+        var cands = [];
+        lists.forEach(function (arr) {
+          arr.forEach(function (e) {
+            if (e.type === 'file' && /\.json$/i.test(e.name) && /백업|backup|cakeshop|케이크/i.test(e.name)) {
+              cands.push(e);
+            }
+          });
+        });
+        if (!cands.length) return null;
+        // 이름에 날짜가 들어가므로 이름 역순 = 최신
+        cands.sort(function (a, b) { return b.name.localeCompare(a.name); });
+        var pick = cands[0];
+        return getFile(pick.path).then(function (file) {
+          return file ? { file: file, path: pick.path, foundByName: true } : null;
+        });
+      });
+    });
+  }
+
+  // 큰 파일은 contents 응답에 내용이 안 담겨서 blob 으로 따로 받습니다
+  function fileText(file) {
+    if (file.content) return Promise.resolve(fromB64(file.content));
+    var c = cfg();
+    return api('/repos/' + c.repo + '/git/blobs/' + file.sha).then(function (b) {
+      return fromB64(b.content || '');
+    });
+  }
+
   function putFile(path, base64, sha, message) {
     var c = cfg();
     var body = { message: message, content: base64 };
@@ -253,19 +297,29 @@ window.Cloud = (function () {
   /* ---------- 내려받기 ---------- */
   function download(onStep) {
     var step = onStep || function () {};
+    var usedPath = '';
     return check().then(function () {
-      step('주문 자료를 내려받는 중...');
-      return getFile(DATA_PATH);
-    }).then(function (file) {
-      if (!file) throw fail('깃허브에 아직 백업이 없어요. 먼저 [깃허브에 저장]을 해주세요.');
+      step('백업 파일을 찾는 중...');
+      return findBackup();
+    }).then(function (found) {
+      if (!found) {
+        throw fail('깃허브에서 백업 파일을 찾지 못했어요.\n' +
+          '저장소에 백업 json 파일이 있는지 확인해 주세요. ' +
+          '파일이 있는데도 안 보이면, 깃허브 웹에서 그 파일을 내려받아 ' +
+          '[⬆️ 백업 파일 불러오기]로 넣으시면 됩니다.');
+      }
+      usedPath = found.path;
+      step('주문 자료를 읽는 중... (' + found.path + ')');
+      return fileText(found.file);
+    }).then(function (text) {
       var data;
-      try { data = JSON.parse(fromB64(file.content)); }
-      catch (e) { throw fail('백업 파일을 읽지 못했어요. 파일이 손상됐을 수 있습니다.'); }
+      try { data = JSON.parse(text); }
+      catch (e) { throw fail('백업 파일을 읽지 못했어요. 파일이 손상됐을 수 있습니다. (' + usedPath + ')'); }
       DB.importAll(data);
       return downloadPhotos(step);
     }).then(function (n) {
       saveCfg({ lastSyncAt: new Date().toISOString() });
-      return { photos: n, orders: DB.list('orders').length };
+      return { photos: n, orders: DB.list('orders').length, path: usedPath };
     });
   }
 
@@ -304,7 +358,8 @@ window.Cloud = (function () {
     cfg: cfg, saveCfg: saveCfg, token: token, saveToken: saveToken, configured: configured,
     isReadOnly: isReadOnly,
     cleanToken: cleanToken, tokenInfo: tokenInfo, maskToken: maskToken,
-    check: check, diagnose: diagnose, upload: upload, download: download, lastSyncText: lastSyncText,
+    check: check, diagnose: diagnose, upload: upload, download: download,
+    findBackup: findBackup, lastSyncText: lastSyncText,
     DATA_PATH: DATA_PATH
   };
 })();

@@ -127,17 +127,28 @@ window.Settings = (function () {
       '<div id="ghProgress"></div>' +
 
       '<details class="adv" style="margin-top:14px" id="ghManual">' +
-        '<summary>🖐️ 토큰 없이 백업하기 (100% 확실)</summary>' +
+        '<summary>🖐️ 토큰 없이 주고받기 (100% 확실)</summary>' +
         '<p class="hint" style="margin-top:12px">토큰 연결이 안 되어도 괜찮습니다. ' +
-        '<b>아래 버튼 하나로 파일을 받고 깃허브 업로드 화면까지 한 번에</b> 열어드립니다.</p>' +
-        '<div class="row"><button class="btn" id="ghManualGo">⬇️ 백업 파일 받고 깃허브 열기</button></div>' +
+        '깃허브 웹사이트를 직접 쓰는 방법이라 <b>어떤 환경에서든 반드시 됩니다.</b></p>' +
+
+        '<h3 style="margin-top:14px">⬆️ 깃허브에 올리기</h3>' +
+        '<div class="row"><button class="btn" id="ghManualGo">백업 파일 받고 깃허브 열기</button></div>' +
         '<ol style="padding-left:20px;line-height:2;margin-top:10px">' +
           '<li>버튼을 누르면 <b>백업 파일이 내려받아지고</b>, 깃허브 업로드 화면이 새 창으로 열립니다</li>' +
           '<li>내려받은 파일을 그 화면에 <b>끌어다 놓습니다</b> (드래그 앤 드롭)</li>' +
           '<li>화면 아래 초록색 <b>Commit changes</b> 를 누르면 끝입니다</li>' +
         '</ol>' +
-        '<p class="hint">되돌릴 때는 깃허브에서 그 파일을 내려받아 위쪽 <b>[⬆️ 백업 파일 불러오기]</b> 로 넣으면 됩니다.<br>' +
-        '알바생에게 보여줄 때도 이 백업 파일을 카톡으로 보내주면 됩니다.</p>' +
+
+        '<div class="divider"></div>' +
+        '<h3>⬇️ 깃허브에서 되찾기</h3>' +
+        '<div class="row"><button class="btn" id="ghManualBack">내 저장소 열기</button></div>' +
+        '<ol style="padding-left:20px;line-height:2;margin-top:10px">' +
+          '<li>열린 화면에서 <b>백업 json 파일</b>을 클릭합니다 ' +
+            '(<code>케이크공방_백업_날짜.json</code> 또는 <code>data</code> 폴더 안)</li>' +
+          '<li>오른쪽 위 <b>⬇️ (Download raw file)</b> 아이콘을 눌러 내려받습니다</li>' +
+          '<li>이 화면 위쪽의 <b>[⬆️ 백업 파일 불러오기]</b> 로 그 파일을 넣으면 자료가 되돌아옵니다</li>' +
+        '</ol>' +
+        '<p class="hint">알바생에게 보여줄 때도 이 백업 파일을 카톡으로 보내주면 됩니다.</p>' +
       '</details>' +
     '</div>';
   }
@@ -306,6 +317,14 @@ window.Settings = (function () {
         window.open('https://github.com/' + repo + '/upload/main', '_blank', 'noopener');
       }, 400);
       U.toast('백업 파일을 받았어요. 열린 창에 파일을 끌어다 놓으세요.');
+    };
+
+    // 깃허브 웹에서 백업 파일을 직접 내려받으러 가기 (토큰 없이 되찾기)
+    U.$('#ghManualBack', view).onclick = function () {
+      var repo = U.$('#ghRepo', view).value.trim();
+      if (!repo) { U.toast('저장소 이름을 먼저 넣어주세요 (예: heerinkim/cake-shop-data)'); return; }
+      Cloud.saveCfg({ repo: repo });
+      window.open('https://github.com/' + repo, '_blank', 'noopener');
     };
 
     U.$('#ghCheck', view).onclick = function () {

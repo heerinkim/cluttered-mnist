@@ -205,6 +205,52 @@ table input,table select{padding:6px 8px;font-size:14px}
 }
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
+/* ---------- 로그인 / 회원가입 ---------- */
+body.logged-out .tabs{display:none}
+.auth-card{max-width:520px;margin:0 auto 16px}
+.auth-hero{text-align:center;padding:6px 0 14px}
+.auth-logo{font-size:44px;line-height:1}
+.auth-hero h2{font-size:21px;margin:6px 0 6px}
+.auth-tabs{margin-bottom:16px}
+.auth-tabs .btn{flex:1}
+.btn.wide{width:100%}
+.agree{margin-top:10px;font-weight:500;cursor:pointer;align-items:flex-start;gap:8px}
+.feature{display:flex;gap:10px;align-items:flex-start;padding:10px;border:1px solid var(--line);border-radius:12px}
+.f-ico{font-size:22px;line-height:1.2}
+
+/* 남은 기간 안내 띠 */
+.trial-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--rose-soft);color:var(--rose-dark);
+  border:1px solid #f6d9e0;border-radius:12px;padding:10px 14px;margin-bottom:14px;
+  font-size:14px;font-weight:600;
+}
+.trial-bar.expired{background:#fdeceb;border-color:#f6cdc9;color:#b93b37}
+
+/* 요금 표시 */
+.price-box{
+  text-align:center;background:#fffdfb;border:1px solid var(--line);
+  border-radius:14px;padding:18px;margin:14px 0;
+}
+.price-amt{font-size:30px;font-weight:800;color:var(--rose-dark);letter-spacing:-.03em}
+.price-amt span{font-size:15px;font-weight:600;color:var(--ink-soft);margin-left:4px}
+
+/* 상단 계정 칩 */
+#acctChip{display:inline-flex;align-items:center;gap:6px;margin-left:8px}
+.acct-btn{
+  background:#fff;border:1px solid var(--line);border-radius:999px;
+  padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink-soft);
+  font-family:inherit;
+}
+.acct-btn:hover{background:var(--rose-soft);color:var(--rose-dark)}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--mint);display:inline-block}
+.sync-dot.busy{background:var(--amber)}
+.sync-dot.err{background:var(--red)}
+@media (max-width:640px){
+  .topbar{flex-wrap:wrap}
+  #acctChip{margin-left:0}
+}
+
 /* 붙여넣기 미리보기 - 좁은 팝업에서도 두 칸으로 */
 .pv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .pv-row .field{margin-bottom:8px}

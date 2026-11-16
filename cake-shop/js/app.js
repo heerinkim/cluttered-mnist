@@ -9,8 +9,12 @@ window.App = (function () {
     gallery: Gallery,
     cost: Cost,
     notify: Notify,
-    settings: Settings
+    settings: Settings,
+    subscribe: { render: function (v) { Auth.renderSubscribe(v); } }
   };
+
+  // 이용 기간이 끝나도 자료를 보고 내려받는 것은 막지 않습니다
+  var READ_ONLY_OK = ['home', 'monthly', 'orders', 'gallery', 'cost', 'settings', 'subscribe'];
 
   function current() {
     var r = (location.hash || '#home').slice(1);
@@ -26,11 +30,37 @@ window.App = (function () {
     view.id = 'view';
     view.className = 'view';
     old.parentNode.replaceChild(view, old);
+    // 로그인하지 않았으면 회원가입 / 로그인 화면만 보여줍니다
+    if (!SB.loggedIn()) {
+      document.body.classList.add('logged-out');
+      try { Auth.renderGate(view); } catch (e) { console.error(e); }
+      window.scrollTo({ top: 0 });
+      return;
+    }
+    document.body.classList.remove('logged-out');
+
     U.$$('#tabs button').forEach(function (b) {
       b.classList.toggle('active', b.dataset.route === route);
     });
+
+    // 이용 기간이 끝났으면, 쓰기가 필요한 화면은 구독 안내로 바꿔줍니다
+    var acc = Auth.info();
+    if (acc && !acc.active && READ_ONLY_OK.indexOf(route) < 0) {
+      view.innerHTML = Auth.banner();
+      var sub = document.createElement('div');
+      view.appendChild(sub);
+      Auth.renderExpired(sub);
+      bindBanner(view);
+      window.scrollTo({ top: 0 });
+      return;
+    }
+
     try {
-      ROUTES[route].render(view);
+      view.insertAdjacentHTML('afterbegin', Auth.banner());
+      bindBanner(view);
+      var host = document.createElement('div');
+      view.appendChild(host);
+      ROUTES[route].render(host);
     } catch (e) {
       view.innerHTML = '<div class="card"><h2>문제가 생겼어요</h2><p class="hint">' +
         U.esc(e.message) + '</p><button class="btn ghost" onclick="location.hash=\'#home\'">홈으로</button></div>';
@@ -38,6 +68,13 @@ window.App = (function () {
     }
     refreshShopName();
     window.scrollTo({ top: 0 });
+  }
+
+  function bindBanner(view) {
+    view.addEventListener('click', function (e) {
+      var go = e.target.dataset && e.target.dataset.go;
+      if (go && (go === 'subscribe' || ROUTES[go])) location.hash = '#' + go;
+    });
   }
 
   function refreshShopName() {
@@ -48,9 +85,28 @@ window.App = (function () {
     var n = 0;
     try { n = Notify.totalCount(); } catch (e) { n = 0; }
     document.title = (n ? '(' + n + ') ' : '') + name + ' 운영 노트';
+    refreshAcctChip();
+  }
+
+  // 상단 오른쪽: 저장 상태 + 계정 메뉴
+  function refreshAcctChip() {
+    var chip = U.$('#acctChip');
+    if (!chip) return;
+    if (!SB.loggedIn()) { chip.innerHTML = ''; return; }
+    var st = Sync.status();
+    var cls = st.busy ? 'busy' : (st.error ? 'err' : '');
+    chip.innerHTML =
+      '<button class="acct-btn" id="syncBtn" title="' + U.esc(Sync.lastText()) + '">' +
+        '<span class="sync-dot ' + cls + '"></span> ' +
+        (st.pending ? st.pending + '건 저장 대기' : '저장됨') + '</button>' +
+      '<button class="acct-btn" id="acctBtn">👤 내 계정</button>';
+    U.$('#syncBtn').onclick = function () { Sync.run(); U.toast('서버와 맞추는 중...'); };
+    U.$('#acctBtn').onclick = function () { location.hash = '#settings'; };
   }
 
   function start() {
+    SB.loadSession();
+    if (SB.loggedIn()) DB.setScope(SB.userId());
     Seed.installIfEmpty();
     refreshShopName();
     U.$('#todayLabel').textContent = U.korDateFull(U.today());
@@ -72,6 +128,20 @@ window.App = (function () {
       U.toast('저장이 안 되는 환경이에요. 설정 화면의 안내를 확인해 주세요.');
     }
     render();
+
+    // 로그인 상태면 서버에서 최신 자료를 가져오고 자동 저장을 켭니다
+    if (SB.loggedIn()) {
+      Auth.refreshAccess().then(function () {
+        render();
+        return Sync.run({ rerender: false });
+      }).then(function () {
+        Sync.start();
+        render();
+      }).catch(function (e) {
+        U.toast('서버 연결 실패 — 이 컴퓨터의 자료로 계속 쓰실 수 있어요');
+        console.warn(e);
+      });
+    }
     autoPull();
   }
 

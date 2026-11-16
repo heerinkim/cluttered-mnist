@@ -11,6 +11,7 @@ window.Settings = (function () {
     };
 
     view.innerHTML = '' +
+      accountCard() +
       '<div class="card">' +
         '<h2>⚙️ 가게 정보</h2>' +
         '<div class="grid two">' +
@@ -63,6 +64,68 @@ window.Settings = (function () {
       '</div>';
 
     bind(view);
+  }
+
+  /* ---------- 내 계정 ---------- */
+  function accountCard() {
+    if (!SB.loggedIn()) return '';
+    var a = Auth.info() || {};
+    var email = (SB.user() && SB.user().email) || '';
+    var stateBadge = !a.active
+      ? '<span class="badge red">이용 종료</span>'
+      : Auth.onTrial()
+        ? '<span class="badge amber">무료 체험 ' + Auth.daysLeft() + '일 남음</span>'
+        : '<span class="badge mint">구독 중</span>';
+
+    return '' +
+    '<div class="card">' +
+      '<div class="row"><h2 style="margin:0">👤 내 계정</h2><div class="spacer"></div>' + stateBadge + '</div>' +
+      '<p class="hint">' + U.esc(email) + ' · ' + U.esc(a.shop_name || '') + '</p>' +
+      '<div class="info" id="syncInfo">☁️ ' + U.esc(Sync.lastText()) + '</div>' +
+      '<p class="hint" style="margin-top:8px">입력하신 자료는 이 컴퓨터에 먼저 저장되고, 곧바로 서버에도 올라갑니다. ' +
+      '다른 기기에서 같은 계정으로 로그인하면 그대로 보여요.</p>' +
+      '<div class="row">' +
+        '<button class="btn ghost" id="acctSync">☁️ 지금 서버와 맞추기</button>' +
+        '<button class="btn ghost" id="acctSub">💳 구독 / 이용 기간</button>' +
+        '<button class="btn ghost" id="acctPw">🔑 비밀번호 바꾸기</button>' +
+        '<div class="spacer"></div>' +
+        '<button class="btn ghost" id="acctOut">로그아웃</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function bindAccount(view) {
+    if (!SB.loggedIn()) return;
+    var sync = U.$('#acctSync', view);
+    if (sync) sync.onclick = function () {
+      U.toast('서버와 맞추는 중...');
+      Sync.run().then(function (st) {
+        U.toast(st.error ? ('실패 — ' + String(st.error).split('\n')[0]) : '서버와 맞췄어요');
+      });
+    };
+    var sub = U.$('#acctSub', view);
+    if (sub) sub.onclick = function () { location.hash = '#subscribe'; };
+    var out = U.$('#acctOut', view);
+    if (out) out.onclick = Auth.signOut;
+    var pw = U.$('#acctPw', view);
+    if (pw) pw.onclick = function () {
+      U.modal('비밀번호 바꾸기',
+        '<div class="field"><label>새 비밀번호 (6자 이상)</label><input id="pw1" type="password"></div>' +
+        '<div class="field"><label>한 번 더</label><input id="pw2" type="password"></div>' +
+        '<div id="pwMsg"></div>' +
+        '<div class="row end"><button class="btn ghost" id="pwCancel">취소</button>' +
+        '<button class="btn" id="pwSave">바꾸기</button></div>',
+        function (body) {
+          U.$('#pwCancel', body).onclick = U.closeModal;
+          U.$('#pwSave', body).onclick = function () {
+            var a = U.$('#pw1', body).value, b = U.$('#pw2', body).value;
+            if (a.length < 6) { U.$('#pwMsg', body).innerHTML = '<div class="warn">6자 이상으로 정해주세요.</div>'; return; }
+            if (a !== b) { U.$('#pwMsg', body).innerHTML = '<div class="warn">두 비밀번호가 달라요.</div>'; return; }
+            SB.changePassword(a).then(function () { U.closeModal(); U.toast('비밀번호를 바꿨어요'); })
+              .catch(function (e) { U.$('#pwMsg', body).innerHTML = '<div class="warn">' + U.esc(e.message) + '</div>'; });
+          };
+        });
+    };
   }
 
   /* ---------- 깃허브 백업 ---------- */
@@ -463,6 +526,7 @@ window.Settings = (function () {
   }
 
   function bind(view) {
+    bindAccount(view);
     bindCloud(view);
     view.addEventListener('click', function (e) {
       if (e.target.dataset.open) window.open(e.target.dataset.open, '_blank', 'noopener');

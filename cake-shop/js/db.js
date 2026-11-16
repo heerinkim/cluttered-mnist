@@ -5,8 +5,19 @@
      => 그래서 설정 화면의 [백업 파일 내려받기]를 주기적으로 꼭 눌러주세요. */
 window.DB = (function () {
 
-  var PREFIX = 'cakeshop:';
+  // 회원마다 자료를 따로 보관합니다. 같은 컴퓨터를 여러 사장님이 써도 섞이지 않아요.
+  var BASE = 'cakeshop:';
+  var PREFIX = BASE;
   var memoryFallback = {};   // localStorage 를 못 쓰는 환경(사파리 파일열기 등) 대비
+
+  function setScope(uid) {
+    var next = uid ? BASE + uid + ':' : BASE;
+    if (next === PREFIX) return false;
+    PREFIX = next;
+    memoryFallback = {};
+    return true;
+  }
+  function scope() { return PREFIX; }
   var storageOk = (function () {
     try {
       window.localStorage.setItem(PREFIX + '__t', '1');
@@ -32,9 +43,41 @@ window.DB = (function () {
     return value;
   }
 
+  /* ---------- 바뀐 내용 표시 (서버로 보낼 것 모아두기) ---------- */
+  var SYNCED = ['orders', 'menus', 'inventory', 'ingredients', 'recipes', 'options', 'photos'];
+
+  function dirtyMap(key) { return read('dirty:' + key, {}); }
+  function markDirty(key, id, how) {
+    if (SYNCED.indexOf(key) < 0 || !id) return;
+    var m = dirtyMap(key);
+    m[id] = how;                       // 'u' = 새로 쓰거나 고침, 'd' = 지움
+    write('dirty:' + key, m);
+  }
+  function clearDirty(key, ids) {
+    var m = dirtyMap(key);
+    ids.forEach(function (id) { delete m[id]; });
+    write('dirty:' + key, m);
+  }
+  function dirtyCount() {
+    var n = SYNCED.reduce(function (a, k) { return a + Object.keys(dirtyMap(k)).length; }, 0);
+    return n + (read('dirty:settings', false) ? 1 : 0);
+  }
+  // 목록 전체가 바뀔 때(가져오기·일괄수정) 무엇이 달라졌는지 찾아냅니다
+  function diffDirty(key, before, after) {
+    if (SYNCED.indexOf(key) < 0) return;
+    var b = {}, a = {};
+    (before || []).forEach(function (x) { if (x && x.id) b[x.id] = JSON.stringify(x); });
+    (after || []).forEach(function (x) { if (x && x.id) a[x.id] = JSON.stringify(x); });
+    Object.keys(a).forEach(function (id) { if (b[id] !== a[id]) markDirty(key, id, 'u'); });
+    Object.keys(b).forEach(function (id) { if (!(id in a)) markDirty(key, id, 'd'); });
+  }
+
   /* ---------- 컬렉션(목록) 공통 ---------- */
   function list(key) { return read(key, []); }
-  function saveList(key, arr) { return write(key, arr); }
+  function saveList(key, arr) {
+    if (SYNCED.indexOf(key) >= 0) diffDirty(key, list(key), arr);
+    return write(key, arr);
+  }
   function upsert(key, item) {
     var arr = list(key);
     if (!item.id) { item.id = U.uid(); item.createdAt = new Date().toISOString(); }
@@ -60,7 +103,10 @@ window.DB = (function () {
     reservationSource: 'manual' // 'manual'(직접 입력) 또는 'paste'(채팅 붙여넣기)
   };
   function settings() { return Object.assign({}, DEFAULT_SETTINGS, read('settings', {})); }
-  function saveSettings(s) { return write('settings', Object.assign(settings(), s)); }
+  function saveSettings(s) {
+    write('dirty:settings', true);
+    return write('settings', Object.assign(settings(), s));
+  }
 
   /* ---------- 알림 문구 ---------- */
   var DEFAULT_TEMPLATES = {
@@ -69,7 +115,10 @@ window.DB = (function () {
     afterPickup: '[{{가게이름}}] {{고객명}}님, 오늘 케이크는 어떠셨나요? 😊\n소중한 순간 함께하게 해주셔서 감사합니다.\n후기를 남겨주시면 큰 힘이 됩니다!'
   };
   function templates() { return Object.assign({}, DEFAULT_TEMPLATES, read('templates', {})); }
-  function saveTemplates(t) { return write('templates', Object.assign(templates(), t)); }
+  function saveTemplates(t) {
+    write('dirty:settings', true);
+    return write('templates', Object.assign(templates(), t));
+  }
 
   /* ---------- 사진 창고 (IndexedDB) ---------- */
   var idbPromise = null;
@@ -148,7 +197,8 @@ window.DB = (function () {
   }
 
   return {
-    storageOk: storageOk,
+    storageOk: storageOk, setScope: setScope, scope: scope, SYNCED: SYNCED,
+    dirtyMap: dirtyMap, markDirty: markDirty, clearDirty: clearDirty, dirtyCount: dirtyCount,
     list: list, saveList: saveList, upsert: upsert, remove: remove, find: find,
     settings: settings, saveSettings: saveSettings,
     templates: templates, saveTemplates: saveTemplates, DEFAULT_TEMPLATES: DEFAULT_TEMPLATES,

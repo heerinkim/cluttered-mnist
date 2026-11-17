@@ -2,7 +2,18 @@
 window.Auth = (function () {
 
   var PRICE = 9900;             // 월 구독료
+  var PRICE_YEAR = 99000;       // 연 구독료 (2개월 무료)
   var TRIAL_MONTHS = 3;         // 무료 체험 기간
+
+  /* 무통장입금 받을 계좌 — 관리자가 구독 화면에서 직접 입력합니다 (서버에 저장) */
+  var BANK = { bank: '', account: '', holder: '' };
+  function bankReady() { return !!(BANK.bank && BANK.account && BANK.holder); }
+  function loadBank() {
+    return SB.getServiceConfig().then(function (c) {
+      if (c) BANK = { bank: c.bank_name || '', account: c.bank_account || '', holder: c.bank_holder || '' };
+      return BANK;
+    }).catch(function () { return BANK; });
+  }
   var access = null;            // { shop_name, trial_ends_at, subscribed_until, active, days_left }
   var mode = 'login';           // 'login' | 'signup' | 'reset'
 
@@ -254,32 +265,28 @@ window.Auth = (function () {
       '</div>' +
 
       '<div class="card">' +
-        '<h2>요금</h2>' +
-        '<div class="price-box">' +
-          '<div class="price-amt">' + U.won(PRICE) + '<span>/ 월</span></div>' +
-          '<div class="cap-sub">부가세 포함 · 가입 후 ' + TRIAL_MONTHS + '개월 무료 · 언제든 해지</div>' +
+        '<h2>요금제</h2>' +
+        '<div class="grid two plans">' +
+          planCard('monthly', '월 결제', PRICE, '매달 결제', '') +
+          planCard('yearly', '연 결제', PRICE_YEAR, '1년치 한 번에', '2개월 무료') +
         '</div>' +
-        '<div class="warn"><b>결제 기능은 아직 연결되지 않았습니다.</b><br>' +
-          '실제로 카드 결제를 받으려면 사업자등록과 결제대행사(PG) 가입이 필요합니다. ' +
-          '아래 [준비 사항]을 참고해 주세요. 준비가 끝나면 이 자리에 결제 버튼이 붙습니다.</div>' +
-        '<details class="adv" style="margin-top:12px">' +
-          '<summary>결제를 받으려면 무엇이 필요한가요?</summary>' +
-          '<ol style="padding-left:20px;line-height:2;margin-top:10px">' +
-            '<li><b>사업자등록</b> + <b>통신판매업 신고</b> (구청/시청, 온라인 판매 필수)</li>' +
-            '<li><b>결제대행사(PG) 가입</b> — 토스페이먼츠 · 포트원 · KG이니시스 등<br>' +
-              '<span class="cap-sub">심사에 보통 3~10일. <b>정기결제(자동결제)</b>는 별도 심사가 필요합니다</span></li>' +
-            '<li><b>이용약관 · 개인정보처리방침 · 환불정책</b> 게시 (전자상거래법상 의무)</li>' +
-            '<li>결제 승인을 처리할 <b>서버 코드</b> — Supabase Edge Function 으로 붙일 수 있습니다</li>' +
-          '</ol>' +
-          '<p class="hint">수수료는 보통 결제액의 2~3.5%입니다. ' + U.won(PRICE) + ' 기준 건당 약 60~100원.</p>' +
-        '</details>' +
+        '<p class="hint" style="margin-top:10px">부가세 포함 · 가입 후 ' + TRIAL_MONTHS + '개월 무료 · 언제든 해지</p>' +
       '</div>' +
 
+      '<div class="card" id="payBox">' +
+        '<h2>🏦 무통장입금</h2>' +
+        '<p class="hint">카드 자동결제는 준비 중입니다. 지금은 <b>계좌이체</b>로 받고 있어요.</p>' +
+        '<div id="payState"><p class="hint">확인하는 중...</p></div>' +
+      '</div>' +
+
+      '<div id="adminBox"></div>' +
+
       '<div class="card">' +
-        '<h2>결제 내역</h2>' +
+        '<h2>내 결제 내역</h2>' +
         '<div id="payList"><p class="hint">불러오는 중...</p></div>' +
       '</div>';
 
+    loadBank().then(function () { bindSubscribe(view); });
     SB.myPayments().then(function (rows) {
       var box = U.$('#payList', view);
       if (!box) return;
@@ -300,6 +307,166 @@ window.Auth = (function () {
 
   function tile(label, value, cls) {
     return '<div class="stat ' + cls + '"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>';
+  }
+
+  var chosenPlan = 'yearly';
+
+  function planCard(plan, title, amount, sub, badge) {
+    var perMonth = plan === 'yearly' ? Math.round(amount / 12) : amount;
+    return '<label class="plan' + (chosenPlan === plan ? ' on' : '') + '" data-plan="' + plan + '">' +
+      '<input type="radio" name="plan" value="' + plan + '"' + (chosenPlan === plan ? ' checked' : '') + '>' +
+      '<div class="plan-body">' +
+        '<div class="row" style="gap:6px"><b>' + title + '</b>' +
+          (badge ? '<span class="badge mint">' + badge + '</span>' : '') + '</div>' +
+        '<div class="plan-amt">' + U.won(amount) + '</div>' +
+        '<div class="cap-sub">' + sub +
+          (plan === 'yearly' ? ' · 한 달에 ' + U.won(perMonth) + ' 꼴' : '') + '</div>' +
+      '</div></label>';
+  }
+
+  /* ---------- 무통장입금 안내 / 신청 ---------- */
+  function bindSubscribe(view) {
+    view.addEventListener('click', function (e) {
+      var lab = e.target.closest('[data-plan]');
+      if (lab) {
+        chosenPlan = lab.dataset.plan;
+        U.$$('.plan', view).forEach(function (el) { el.classList.toggle('on', el.dataset.plan === chosenPlan); });
+        drawPayState(view);
+      }
+    });
+    drawPayState(view);
+    drawAdmin(view);
+  }
+
+  function drawPayState(view) {
+    var box = U.$('#payState', view);
+    if (!box) return;
+    SB.myPayments().then(function (rows) {
+      var pending = (rows || []).filter(function (p) { return p.status === 'pending'; })[0];
+      if (pending) { box.innerHTML = pendingHtml(pending); bindCancelHint(view); return; }
+      box.innerHTML = requestHtml();
+      var btn = U.$('#reqPay', view);
+      if (btn) btn.onclick = function () {
+        var who = (U.$('#depositor', view) || {}).value || '';
+        if (!who.trim()) { U.toast('입금하실 분 이름을 적어주세요'); return; }
+        btn.disabled = true;
+        SB.requestBankTransfer(chosenPlan, who.trim()).then(function () {
+          U.toast('입금 신청을 접수했어요');
+          drawPayState(view);
+        }).catch(function (err) { btn.disabled = false; U.toast(err.message); });
+      };
+    }).catch(function () { box.innerHTML = '<div class="warn">상태를 불러오지 못했어요.</div>'; });
+  }
+
+  function requestHtml() {
+    var amount = chosenPlan === 'yearly' ? PRICE_YEAR : PRICE;
+    var label = chosenPlan === 'yearly' ? '연 결제' : '월 결제';
+    if (!bankReady()) {
+      return '<div class="warn"><b>입금 계좌가 아직 등록되지 않았습니다.</b><br>' +
+        '서비스를 여는 사장님께서 계좌번호를 알려주시면 이 자리에 표시됩니다.</div>';
+    }
+    return '' +
+      '<div class="bank-box">' +
+        '<div class="bank-row"><span>입금 은행</span><b>' + U.esc(BANK.bank) + '</b></div>' +
+        '<div class="bank-row"><span>계좌번호</span><b>' + U.esc(BANK.account) +
+          ' <button class="btn ghost small" id="copyAcct">복사</button></b></div>' +
+        '<div class="bank-row"><span>예금주</span><b>' + U.esc(BANK.holder) + '</b></div>' +
+        '<div class="bank-row total"><span>' + label + ' 금액</span><b>' + U.won(amount) + '</b></div>' +
+      '</div>' +
+      '<div class="field" style="margin-top:12px"><label>입금하실 분 이름 <span style="color:var(--rose)">*</span></label>' +
+        '<input id="depositor" placeholder="홍길동" autocomplete="name"></div>' +
+      '<p class="hint">입금자명이 다르면 확인이 늦어질 수 있어요. 적어주신 이름으로 보내주세요.</p>' +
+      '<button class="btn wide" id="reqPay">입금 신청하기</button>' +
+      '<p class="hint" style="margin-top:8px">신청 후 입금해 주시면, 확인되는 대로 이용 기간이 늘어납니다 ' +
+      '(보통 영업일 기준 하루 이내).</p>';
+  }
+
+  function pendingHtml(p) {
+    var label = p.plan === 'yearly' ? '연 결제' : '월 결제';
+    return '<div class="info"><b>⏳ 입금 확인을 기다리는 중입니다.</b><br>' +
+      label + ' · <b>' + U.won(p.amount) + '</b> · 입금자명 <b>' + U.esc(p.depositor_name || '-') + '</b><br>' +
+      '신청일 ' + U.korDateFull(String(p.created_at).slice(0, 10)) + '</div>' +
+      (bankReady()
+        ? '<div class="bank-box" style="margin-top:12px">' +
+            '<div class="bank-row"><span>입금 계좌</span><b>' + U.esc(BANK.bank) + ' ' + U.esc(BANK.account) + '</b></div>' +
+            '<div class="bank-row"><span>예금주</span><b>' + U.esc(BANK.holder) + '</b></div>' +
+            '<div class="bank-row total"><span>보내실 금액</span><b>' + U.won(p.amount) + '</b></div>' +
+          '</div>' : '') +
+      '<p class="hint" style="margin-top:10px">아직 입금 전이시면 위 계좌로 보내주세요. ' +
+      '확인되면 자동으로 이용 기간이 늘어납니다.</p>';
+  }
+
+  function bindCancelHint(view) {
+    var c = U.$('#copyAcct', view);
+    if (c) c.onclick = function (e) { e.preventDefault(); U.copyText(BANK.account); };
+  }
+
+  /* ---------- 관리자: 입금 확인 ---------- */
+  function drawAdmin(view) {
+    var box = U.$('#adminBox', view);
+    if (!box) return;
+    SB.amIAdmin().then(function (isAdmin) {
+      if (!isAdmin) { box.innerHTML = ''; return; }
+      return SB.adminPayments('pending').then(function (rows) {
+        box.innerHTML =
+          '<div class="card"><h2>🔑 입금 받을 계좌 (관리자)</h2>' +
+            '<p class="hint">여기에 적은 계좌가 회원들의 구독 화면에 보입니다.</p>' +
+            '<div class="grid three">' +
+              '<div class="field"><label>은행</label><input id="bkBank" value="' + U.esc(BANK.bank) + '" placeholder="국민은행"></div>' +
+              '<div class="field"><label>계좌번호</label><input id="bkAcct" value="' + U.esc(BANK.account) + '" placeholder="123456-78-901234"></div>' +
+              '<div class="field"><label>예금주</label><input id="bkHold" value="' + U.esc(BANK.holder) + '" placeholder="홍길동"></div>' +
+            '</div>' +
+            '<div class="row end"><button class="btn" id="bkSave">계좌 저장</button></div>' +
+          '</div>' +
+          '<div class="card"><h2>🔑 입금 확인 (관리자)</h2>' +
+          (!rows || !rows.length
+            ? '<div class="empty">확인을 기다리는 입금 신청이 없어요.</div>'
+            : '<div class="table-wrap"><table><thead><tr><th>신청일</th><th>가게</th><th>입금자명</th>' +
+              '<th class="num">금액</th><th>요금제</th><th></th></tr></thead><tbody>' +
+              rows.map(function (r) {
+                return '<tr><td>' + U.korDate(String(r.created_at).slice(0, 10)) + '</td>' +
+                  '<td>' + U.esc(r.shop_name) + '<br><span class="cap-sub">' + U.esc(r.email) + '</span></td>' +
+                  '<td>' + U.esc(r.depositor_name || '-') + '</td>' +
+                  '<td class="num">' + U.won(r.amount) + '</td>' +
+                  '<td>' + (r.plan === 'yearly' ? '연' : '월') + '</td>' +
+                  '<td class="num"><button class="btn mint small" data-approve="' + r.id + '">입금 확인</button> ' +
+                  '<button class="btn ghost small" data-reject="' + r.id + '">취소</button></td></tr>';
+              }).join('') + '</tbody></table></div>') + '</div>';
+
+        var save = U.$('#bkSave', box);
+        if (save) save.onclick = function () {
+          var cfg = {
+            bank: U.$('#bkBank', box).value.trim(),
+            account: U.$('#bkAcct', box).value.trim(),
+            holder: U.$('#bkHold', box).value.trim()
+          };
+          save.disabled = true;
+          SB.saveServiceConfig(cfg).then(function () {
+            BANK = cfg;
+            U.toast('계좌를 저장했어요');
+            save.disabled = false;
+            drawPayState(view);
+          }).catch(function (err) { save.disabled = false; U.toast(err.message); });
+        };
+
+        box.addEventListener('click', function (e) {
+          var t = e.target;
+          if (t.dataset.approve) {
+            if (!U.confirmBox('입금을 확인하고 이용 기간을 늘릴까요?')) return;
+            t.disabled = true;
+            SB.approvePayment(t.dataset.approve).then(function () {
+              U.toast('처리했어요'); drawAdmin(view);
+            }).catch(function (err) { t.disabled = false; U.toast(err.message); });
+          }
+          if (t.dataset.reject) {
+            if (!U.confirmBox('이 신청을 취소할까요?')) return;
+            SB.rejectPayment(t.dataset.reject).then(function () {
+              U.toast('취소했어요'); drawAdmin(view);
+            }).catch(function (err) { U.toast(err.message); });
+          }
+        });
+      });
+    }).catch(function () { box.innerHTML = ''; });
   }
 
   /* 화면 위쪽에 띄우는 남은 기간 안내 */

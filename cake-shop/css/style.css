@@ -235,6 +235,26 @@ body.logged-out .tabs{display:none}
 .price-amt{font-size:30px;font-weight:800;color:var(--rose-dark);letter-spacing:-.03em}
 .price-amt span{font-size:15px;font-weight:600;color:var(--ink-soft);margin-left:4px}
 
+/* 요금제 선택 */
+.plans{margin-top:4px}
+.plan{
+  display:block;border:2px solid var(--line);border-radius:14px;padding:14px;
+  cursor:pointer;background:#fff;position:relative;
+}
+.plan.on{border-color:var(--rose);background:var(--rose-soft)}
+.plan input{position:absolute;opacity:0;width:0;height:0}
+.plan-amt{font-size:24px;font-weight:800;letter-spacing:-.03em;color:var(--rose-dark);margin:6px 0 2px}
+
+/* 무통장입금 안내 */
+.bank-box{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fffdfb}
+.bank-row{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:11px 14px;border-bottom:1px solid var(--line);font-size:14px}
+.bank-row:last-child{border-bottom:none}
+.bank-row span{color:var(--ink-soft);font-weight:600}
+.bank-row b{text-align:right;word-break:break-all}
+.bank-row.total{background:var(--rose-soft)}
+.bank-row.total b{color:var(--rose-dark);font-size:17px}
+
 /* 상단 계정 칩 */
 #acctChip{display:inline-flex;align-items:center;gap:6px;margin-left:8px}
 .acct-btn{

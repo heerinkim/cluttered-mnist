@@ -225,6 +225,35 @@ window.SB = (function () {
     return auth('/rest/v1/payments?select=*&order=created_at.desc&limit=24');
   }
 
+  /* ---------- 구독 (무통장입금) ---------- */
+  function rpc(name, body) {
+    return auth('/rest/v1/rpc/' + name, {
+      method: 'POST', body: JSON.stringify(body || {})
+    });
+  }
+  // 입금하겠다고 신청 (금액은 서버가 정합니다)
+  function requestBankTransfer(plan, depositor) {
+    return rpc('request_bank_transfer', { p_plan: plan, p_depositor: depositor || null });
+  }
+  function amIAdmin() { return rpc('am_i_admin').then(function (v) { return v === true; }); }
+  // 입금 받을 계좌 (관리자가 정하고, 회원은 보기만)
+  function getServiceConfig() {
+    return auth('/rest/v1/service_config?select=*&limit=1')
+      .then(function (rows) { return (rows && rows[0]) || null; });
+  }
+  function saveServiceConfig(cfg) {
+    return auth('/rest/v1/service_config?id=eq.true', {
+      method: 'PATCH', headers: { 'Prefer': 'return=representation' },
+      body: JSON.stringify({
+        bank_name: cfg.bank, bank_account: cfg.account,
+        bank_holder: cfg.holder, updated_at: new Date().toISOString()
+      })
+    });
+  }
+  function adminPayments(status) { return rpc('admin_payments', { p_status: status || 'pending' }); }
+  function approvePayment(id) { return rpc('approve_payment', { p_id: id }); }
+  function rejectPayment(id) { return rpc('reject_payment', { p_id: id }); }
+
   loadSession();
 
   return {
@@ -233,6 +262,9 @@ window.SB = (function () {
     signUp: signUp, signIn: signIn, signOut: signOut,
     resetPassword: resetPassword, changePassword: changePassword,
     myAccess: myAccess, saveShop: saveShop,
+    requestBankTransfer: requestBankTransfer, amIAdmin: amIAdmin,
+    getServiceConfig: getServiceConfig, saveServiceConfig: saveServiceConfig,
+    adminPayments: adminPayments, approvePayment: approvePayment, rejectPayment: rejectPayment,
     pullAll: pullAll, pushRecords: pushRecords,
     pullSettings: pullSettings, pushSettings: pushSettings,
     myPayments: myPayments

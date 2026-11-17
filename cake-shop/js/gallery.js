@@ -74,7 +74,11 @@ window.Gallery = (function () {
         return DB.photoPut(meta.id, blob);
       });
     });
-    chain.then(function () { U.toast('사진을 저장했어요'); App.render(); })
+    chain.then(function () {
+      // 사진 파일도 서버 보관함에 올려 둡니다 (다른 기기에서도 보이게)
+      try { return Sync.syncPhotos(); } catch (e) { return null; }
+    })
+      .then(function () { U.toast('사진을 저장했어요'); App.render(); })
       .catch(function (e) { U.toast('저장 실패: ' + e.message); });
   }
 
@@ -135,6 +139,7 @@ window.Gallery = (function () {
       U.$('#pDel', body).onclick = function () {
         if (!U.confirmBox('이 사진을 삭제할까요?')) return;
         DB.photoDel(id).finally(function () {
+          try { Sync.dropPhoto(id); } catch (e) { }
           DB.remove('photos', id); U.closeModal(); U.toast('삭제했어요'); App.render();
         });
       };

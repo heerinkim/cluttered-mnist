@@ -221,6 +221,52 @@ window.SB = (function () {
     });
   }
 
+  /* ---------- 갤러리 사진 (Supabase Storage) ---------- */
+  var BUCKET = 'cake-photos';
+  function photoPath(id) { return userId() + '/' + id + '.jpg'; }
+
+  function uploadPhoto(id, blob) {
+    return fresh().then(function () {
+      return fetch(URL + '/storage/v1/object/' + BUCKET + '/' + photoPath(id), {
+        method: 'POST',
+        headers: {
+          'apikey': ANON,
+          'Authorization': 'Bearer ' + session.access_token,
+          'Content-Type': blob.type || 'image/jpeg',
+          'x-upsert': 'true'
+        },
+        body: blob
+      });
+    }).then(function (res) {
+      if (res.ok) return true;
+      return res.text().then(function (t) {
+        var body = null; try { body = JSON.parse(t); } catch (e) {}
+        throw fail(humanError(body, res.status), res.status);
+      });
+    });
+  }
+
+  function downloadPhoto(id) {
+    return fresh().then(function () {
+      return fetch(URL + '/storage/v1/object/' + BUCKET + '/' + photoPath(id), {
+        headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + session.access_token }
+      });
+    }).then(function (res) {
+      if (res.status === 404) return null;        // 서버에 아직 없는 사진
+      if (!res.ok) return null;
+      return res.blob();
+    }).catch(function () { return null; });
+  }
+
+  function deletePhoto(id) {
+    return fresh().then(function () {
+      return fetch(URL + '/storage/v1/object/' + BUCKET + '/' + photoPath(id), {
+        method: 'DELETE',
+        headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + session.access_token }
+      });
+    }).then(function () { return true; }).catch(function () { return false; });
+  }
+
   function myPayments() {
     return auth('/rest/v1/payments?select=*&order=created_at.desc&limit=24');
   }
@@ -267,6 +313,7 @@ window.SB = (function () {
     adminPayments: adminPayments, approvePayment: approvePayment, rejectPayment: rejectPayment,
     pullAll: pullAll, pushRecords: pushRecords,
     pullSettings: pullSettings, pushSettings: pushSettings,
-    myPayments: myPayments
+    myPayments: myPayments,
+    uploadPhoto: uploadPhoto, downloadPhoto: downloadPhoto, deletePhoto: deletePhoto
   };
 })();

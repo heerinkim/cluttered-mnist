@@ -719,6 +719,52 @@ window.SB = (function () {
     });
   }
 
+  /* ---------- 갤러리 사진 (Supabase Storage) ---------- */
+  var BUCKET = 'cake-photos';
+  function photoPath(id) { return userId() + '/' + id + '.jpg'; }
+
+  function uploadPhoto(id, blob) {
+    return fresh().then(function () {
+      return fetch(URL + '/storage/v1/object/' + BUCKET + '/' + photoPath(id), {
+        method: 'POST',
+        headers: {
+          'apikey': ANON,
+          'Authorization': 'Bearer ' + session.access_token,
+          'Content-Type': blob.type || 'image/jpeg',
+          'x-upsert': 'true'
+        },
+        body: blob
+      });
+    }).then(function (res) {
+      if (res.ok) return true;
+      return res.text().then(function (t) {
+        var body = null; try { body = JSON.parse(t); } catch (e) {}
+        throw fail(humanError(body, res.status), res.status);
+      });
+    });
+  }
+
+  function downloadPhoto(id) {
+    return fresh().then(function () {
+      return fetch(URL + '/storage/v1/object/' + BUCKET + '/' + photoPath(id), {
+        headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + session.access_token }
+      });
+    }).then(function (res) {
+      if (res.status === 404) return null;        // 서버에 아직 없는 사진
+      if (!res.ok) return null;
+      return res.blob();
+    }).catch(function () { return null; });
+  }
+
+  function deletePhoto(id) {
+    return fresh().then(function () {
+      return fetch(URL + '/storage/v1/object/' + BUCKET + '/' + photoPath(id), {
+        method: 'DELETE',
+        headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + session.access_token }
+      });
+    }).then(function () { return true; }).catch(function () { return false; });
+  }
+
   function myPayments() {
     return auth('/rest/v1/payments?select=*&order=created_at.desc&limit=24');
   }
@@ -765,7 +811,8 @@ window.SB = (function () {
     adminPayments: adminPayments, approvePayment: approvePayment, rejectPayment: rejectPayment,
     pullAll: pullAll, pushRecords: pushRecords,
     pullSettings: pullSettings, pushSettings: pushSettings,
-    myPayments: myPayments
+    myPayments: myPayments,
+    uploadPhoto: uploadPhoto, downloadPhoto: downloadPhoto, deletePhoto: deletePhoto
   };
 })();
 
@@ -2806,7 +2853,11 @@ window.Gallery = (function () {
         return DB.photoPut(meta.id, blob);
       });
     });
-    chain.then(function () { U.toast('사진을 저장했어요'); App.render(); })
+    chain.then(function () {
+      // 사진 파일도 서버 보관함에 올려 둡니다 (다른 기기에서도 보이게)
+      try { return Sync.syncPhotos(); } catch (e) { return null; }
+    })
+      .then(function () { U.toast('사진을 저장했어요'); App.render(); })
       .catch(function (e) { U.toast('저장 실패: ' + e.message); });
   }
 
@@ -2867,6 +2918,7 @@ window.Gallery = (function () {
       U.$('#pDel', body).onclick = function () {
         if (!U.confirmBox('이 사진을 삭제할까요?')) return;
         DB.photoDel(id).finally(function () {
+          try { Sync.dropPhoto(id); } catch (e) { }
           DB.remove('photos', id); U.closeModal(); U.toast('삭제했어요'); App.render();
         });
       };
@@ -3633,6 +3685,43 @@ window.Sync = (function () {
     });
   }
 
+  /* ---------- 사진 파일 (서버 사진 보관함) ----------
+     글자 자료와 달리 사진은 용량이 커서 따로 올립니다.
+     "이 컴퓨터에서 이미 올린 사진" 목록은 기기마다 다르므로 서버와 맞추지 않습니다. */
+  function upMap() { return DB.read('photoUp', {}) || {}; }
+  function markUp(id) { var m = upMap(); m[id] = 1; DB.write('photoUp', m); }
+
+  function syncPhotos() {
+    if (!SB.loggedIn() || !SB.uploadPhoto) return Promise.resolve(0);
+    var metas = DB.list('photos');
+    if (!metas.length) return Promise.resolve(0);
+    var up = upMap(), got = 0;
+
+    return metas.slice(0, 300).reduce(function (chain, p) {
+      return chain.then(function () {
+        return DB.photoGet(p.id).then(function (blob) {
+          if (blob) {
+            if (up[p.id]) return null;                 // 이미 올린 사진은 건너뜁니다
+            return SB.uploadPhoto(p.id, blob).then(function () { markUp(p.id); });
+          }
+          // 이 컴퓨터에 사진 파일이 없으면 = 다른 기기에서 올린 사진 → 내려받습니다
+          return SB.downloadPhoto(p.id).then(function (remote) {
+            if (!remote) return null;
+            markUp(p.id); got++;
+            return DB.photoPut(p.id, remote);
+          });
+        });
+      }).catch(function () { return null; });           // 한 장 실패해도 나머지는 계속
+    }, Promise.resolve()).then(function () { return got; });
+  }
+
+  // 사진을 지울 때 서버 보관함에서도 지웁니다
+  function dropPhoto(id) {
+    var m = upMap(); delete m[id]; DB.write('photoUp', m);
+    if (!SB.loggedIn() || !SB.deletePhoto) return Promise.resolve();
+    return SB.deletePhoto(id).catch(function () { });
+  }
+
   /* ---------- 올리고 받아오기 ---------- */
   function run(opts) {
     opts = opts || {};
@@ -3640,9 +3729,13 @@ window.Sync = (function () {
     if (!SB.loggedIn()) return Promise.resolve(state);
     state.busy = true; state.error = ''; emit();
 
+    var newPhotos = 0;
     return push()
       .then(function () { return opts.pushOnly ? null : pull(); })
-      .then(function () {
+      .then(function () { return opts.pushOnly ? 0 : syncPhotos(); })
+      .then(function (n) {
+        newPhotos = n || 0;
+        if (newPhotos > 0) U.toast('사진 ' + newPhotos + '장을 내려받았어요');
         state.busy = false;
         state.lastAt = new Date().toISOString();
         state.error = '';
@@ -3684,6 +3777,7 @@ window.Sync = (function () {
 
   return {
     pull: pull, push: push, run: run, start: start, stop: stop,
+    syncPhotos: syncPhotos, dropPhoto: dropPhoto,
     status: status, onChange: onChange, lastText: lastText
   };
 })();
@@ -3777,7 +3871,9 @@ window.Auth = (function () {
           '<input name="password2" type="password" autocomplete="new-password"></div>' +
       '</div>' +
       '<label class="row agree"><input type="checkbox" name="agree" style="width:auto">' +
-        '<span>아래 안내를 읽고 동의합니다 <span style="color:var(--rose)">*</span></span></label>' +
+        '<span><a href="terms.html#terms" target="_blank" rel="noopener">이용약관</a> · ' +
+        '<a href="terms.html#privacy" target="_blank" rel="noopener">개인정보처리방침</a>과 ' +
+        '아래 안내를 읽고 동의합니다 <span style="color:var(--rose)">*</span></span></label>' +
       '<div class="info" style="margin-top:8px">' +
         '· 가입일로부터 <b>' + TRIAL_MONTHS + '개월 무료</b>로 쓰실 수 있습니다. 체험 기간에는 결제 수단을 받지 않습니다.<br>' +
         '· 체험이 끝나면 <b>월 ' + U.won(PRICE) + '</b>입니다. 결제하지 않으셔도 <b>기존 자료는 계속 보고 내려받을 수 있고</b>, 새로 저장만 막힙니다.<br>' +

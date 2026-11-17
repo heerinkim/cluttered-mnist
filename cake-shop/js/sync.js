@@ -91,6 +91,43 @@ window.Sync = (function () {
     });
   }
 
+  /* ---------- 사진 파일 (서버 사진 보관함) ----------
+     글자 자료와 달리 사진은 용량이 커서 따로 올립니다.
+     "이 컴퓨터에서 이미 올린 사진" 목록은 기기마다 다르므로 서버와 맞추지 않습니다. */
+  function upMap() { return DB.read('photoUp', {}) || {}; }
+  function markUp(id) { var m = upMap(); m[id] = 1; DB.write('photoUp', m); }
+
+  function syncPhotos() {
+    if (!SB.loggedIn() || !SB.uploadPhoto) return Promise.resolve(0);
+    var metas = DB.list('photos');
+    if (!metas.length) return Promise.resolve(0);
+    var up = upMap(), got = 0;
+
+    return metas.slice(0, 300).reduce(function (chain, p) {
+      return chain.then(function () {
+        return DB.photoGet(p.id).then(function (blob) {
+          if (blob) {
+            if (up[p.id]) return null;                 // 이미 올린 사진은 건너뜁니다
+            return SB.uploadPhoto(p.id, blob).then(function () { markUp(p.id); });
+          }
+          // 이 컴퓨터에 사진 파일이 없으면 = 다른 기기에서 올린 사진 → 내려받습니다
+          return SB.downloadPhoto(p.id).then(function (remote) {
+            if (!remote) return null;
+            markUp(p.id); got++;
+            return DB.photoPut(p.id, remote);
+          });
+        });
+      }).catch(function () { return null; });           // 한 장 실패해도 나머지는 계속
+    }, Promise.resolve()).then(function () { return got; });
+  }
+
+  // 사진을 지울 때 서버 보관함에서도 지웁니다
+  function dropPhoto(id) {
+    var m = upMap(); delete m[id]; DB.write('photoUp', m);
+    if (!SB.loggedIn() || !SB.deletePhoto) return Promise.resolve();
+    return SB.deletePhoto(id).catch(function () { });
+  }
+
   /* ---------- 올리고 받아오기 ---------- */
   function run(opts) {
     opts = opts || {};
@@ -98,9 +135,13 @@ window.Sync = (function () {
     if (!SB.loggedIn()) return Promise.resolve(state);
     state.busy = true; state.error = ''; emit();
 
+    var newPhotos = 0;
     return push()
       .then(function () { return opts.pushOnly ? null : pull(); })
-      .then(function () {
+      .then(function () { return opts.pushOnly ? 0 : syncPhotos(); })
+      .then(function (n) {
+        newPhotos = n || 0;
+        if (newPhotos > 0) U.toast('사진 ' + newPhotos + '장을 내려받았어요');
         state.busy = false;
         state.lastAt = new Date().toISOString();
         state.error = '';
@@ -142,6 +183,7 @@ window.Sync = (function () {
 
   return {
     pull: pull, push: push, run: run, start: start, stop: stop,
+    syncPhotos: syncPhotos, dropPhoto: dropPhoto,
     status: status, onChange: onChange, lastText: lastText
   };
 })();

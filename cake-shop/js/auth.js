@@ -86,7 +86,9 @@ window.Auth = (function () {
           '<input name="password2" type="password" autocomplete="new-password"></div>' +
       '</div>' +
       '<label class="row agree"><input type="checkbox" name="agree" style="width:auto">' +
-        '<span>아래 안내를 읽고 동의합니다 <span style="color:var(--rose)">*</span></span></label>' +
+        '<span><a href="terms.html#terms" target="_blank" rel="noopener">이용약관</a> · ' +
+        '<a href="terms.html#privacy" target="_blank" rel="noopener">개인정보처리방침</a>과 ' +
+        '아래 안내를 읽고 동의합니다 <span style="color:var(--rose)">*</span></span></label>' +
       '<div class="info" style="margin-top:8px">' +
         '· 가입일로부터 <b>' + TRIAL_MONTHS + '개월 무료</b>로 쓰실 수 있습니다. 체험 기간에는 결제 수단을 받지 않습니다.<br>' +
         '· 체험이 끝나면 <b>월 ' + U.won(PRICE) + '</b>입니다. 결제하지 않으셔도 <b>기존 자료는 계속 보고 내려받을 수 있고</b>, 새로 저장만 막힙니다.<br>' +

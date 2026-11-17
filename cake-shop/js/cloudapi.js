@@ -221,6 +221,34 @@ window.SB = (function () {
     });
   }
 
+  /* ---------- 카드결제 (토스페이먼츠) ----------
+     금액과 주문번호는 서버가 정하고, 승인도 서버에서 합니다.
+     비밀키(시크릿 키)는 브라우저에 들어오지 않습니다. */
+  function startCardPayment(plan) { return rpc('start_card_payment', { p_plan: plan }); }
+  function failCardPayment(orderId, reason) {
+    return rpc('fail_card_payment', { p_order_id: orderId, p_reason: reason || '' })
+      .catch(function () { return null; });
+  }
+  function confirmCardPayment(p) {
+    return fresh().then(function () {
+      return fetch(URL + '/functions/v1/toss-confirm', {
+        method: 'POST',
+        headers: {
+          'apikey': ANON,
+          'Authorization': 'Bearer ' + session.access_token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(p)
+      });
+    }).then(function (res) {
+      return res.text().then(function (t) {
+        var body = null; try { body = JSON.parse(t); } catch (e) {}
+        if (!res.ok) throw fail((body && body.error) || '결제 확인에 실패했어요.', res.status);
+        return body || {};
+      });
+    });
+  }
+
   /* ---------- 갤러리 사진 (Supabase Storage) ---------- */
   var BUCKET = 'cake-photos';
   function photoPath(id) { return userId() + '/' + id + '.jpg'; }
@@ -292,7 +320,10 @@ window.SB = (function () {
       method: 'PATCH', headers: { 'Prefer': 'return=representation' },
       body: JSON.stringify({
         bank_name: cfg.bank, bank_account: cfg.account,
-        bank_holder: cfg.holder, updated_at: new Date().toISOString()
+        bank_holder: cfg.holder,
+        toss_client_key: cfg.tossKey || null,
+        card_enabled: !!cfg.cardEnabled,
+        updated_at: new Date().toISOString()
       })
     });
   }
@@ -314,6 +345,8 @@ window.SB = (function () {
     pullAll: pullAll, pushRecords: pushRecords,
     pullSettings: pullSettings, pushSettings: pushSettings,
     myPayments: myPayments,
-    uploadPhoto: uploadPhoto, downloadPhoto: downloadPhoto, deletePhoto: deletePhoto
+    uploadPhoto: uploadPhoto, downloadPhoto: downloadPhoto, deletePhoto: deletePhoto,
+    startCardPayment: startCardPayment, confirmCardPayment: confirmCardPayment,
+    failCardPayment: failCardPayment
   };
 })();

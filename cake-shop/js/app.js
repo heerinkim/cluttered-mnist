@@ -133,6 +133,10 @@ window.App = (function () {
     if (SB.loggedIn()) {
       Auth.refreshAccess().then(function () {
         render();
+        // 카드 결제창에서 돌아온 경우 결제를 확정합니다
+        return Auth.handleTossReturn();
+      }).then(function (paid) {
+        if (paid) { location.hash = '#subscribe'; render(); }
         return Sync.run({ rerender: false });
       }).then(function () {
         Sync.start();

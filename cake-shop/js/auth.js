@@ -8,11 +8,111 @@ window.Auth = (function () {
   /* 무통장입금 받을 계좌 — 관리자가 구독 화면에서 직접 입력합니다 (서버에 저장) */
   var BANK = { bank: '', account: '', holder: '' };
   function bankReady() { return !!(BANK.bank && BANK.account && BANK.holder); }
+
+  /* 카드결제(토스페이먼츠) — 클라이언트 키만 브라우저에 둡니다 (공개용 키).
+     실제 결제 승인은 서버(Supabase 함수)에서 시크릿 키로 처리합니다. */
+  var CARD = { on: false, clientKey: '' };
+  function cardReady() {
+    return !!(CARD.on && CARD.clientKey && /^https?:$/.test(location.protocol));
+  }
   function loadBank() {
     return SB.getServiceConfig().then(function (c) {
-      if (c) BANK = { bank: c.bank_name || '', account: c.bank_account || '', holder: c.bank_holder || '' };
+      if (c) {
+        BANK = { bank: c.bank_name || '', account: c.bank_account || '', holder: c.bank_holder || '' };
+        CARD = { on: !!c.card_enabled, clientKey: c.toss_client_key || '' };
+      }
       return BANK;
     }).catch(function () { return BANK; });
+  }
+
+  /* 토스 결제창 SDK 를 필요할 때만 불러옵니다 (인터넷 없이 쓸 때 방해되지 않도록) */
+  var sdkPromise = null;
+  function loadTossSdk() {
+    if (window.TossPayments) return Promise.resolve(window.TossPayments);
+    if (sdkPromise) return sdkPromise;
+    sdkPromise = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = 'https://js.tosspayments.com/v2/standard';
+      s.onload = function () {
+        if (window.TossPayments) resolve(window.TossPayments);
+        else reject(new Error('결제창을 불러오지 못했어요'));
+      };
+      s.onerror = function () { sdkPromise = null; reject(new Error('결제창을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.')); };
+      document.head.appendChild(s);
+    });
+    return sdkPromise;
+  }
+
+  /* 카드결제 시작: 서버가 주문번호와 금액을 정한 뒤 결제창을 띄웁니다 */
+  function payByCard(plan, btn) {
+    if (!cardReady()) { U.toast('카드결제는 인터넷 주소로 접속했을 때만 됩니다'); return; }
+    if (btn) btn.disabled = true;
+    var order = null;
+    SB.startCardPayment(plan).then(function (row) {
+      order = Array.isArray(row) ? row[0] : row;
+      if (!order || !order.order_id) throw new Error('주문을 만들지 못했어요');
+      return loadTossSdk();
+    }).then(function (TossPayments) {
+      var amount = Number(order.amount);
+      var name = (plan === 'yearly' ? '케이크공방 운영노트 연 구독' : '케이크공방 운영노트 월 구독');
+      var payment = TossPayments(CARD.clientKey).payment({ customerKey: SB.userId() });
+      var base = location.origin + location.pathname;
+      return payment.requestPayment({
+        method: 'CARD',
+        amount: { currency: 'KRW', value: amount },
+        orderId: order.order_id,
+        orderName: name,
+        successUrl: base + '?toss=success',
+        failUrl: base + '?toss=fail',
+        customerEmail: (SB.user() || {}).email || undefined,
+        customerName: (access && access.owner_name) || undefined,
+        card: { useEscrow: false, flowMode: 'DEFAULT', useCardPoint: false, useAppCardOnly: false }
+      });
+    }).catch(function (err) {
+      if (btn) btn.disabled = false;
+      var m = (err && (err.message || err.code)) || '결제를 시작하지 못했어요';
+      if (order && order.order_id) SB.failCardPayment(order.order_id, String(err && err.code || ''));
+      U.toast(m);
+    });
+  }
+
+  /* 결제창에서 돌아왔을 때 (주소에 ?toss=... 가 붙어 있음) */
+  function handleTossReturn() {
+    var q = new URLSearchParams(location.search);
+    var kind = q.get('toss');
+    if (!kind) return Promise.resolve(false);
+
+    function clean() {
+      try { history.replaceState(null, '', location.pathname + (location.hash || '#subscribe')); } catch (e) {}
+    }
+
+    if (kind === 'fail') {
+      var oid = q.get('orderId');
+      var why = q.get('message') || '결제가 취소되었어요';
+      if (oid) SB.failCardPayment(oid, q.get('code') || '');
+      clean();
+      U.toast(why);
+      return Promise.resolve(false);
+    }
+
+    var paymentKey = q.get('paymentKey'), orderId = q.get('orderId'), amount = Number(q.get('amount'));
+    if (!paymentKey || !orderId || !amount) { clean(); return Promise.resolve(false); }
+
+    U.toast('결제를 확인하는 중입니다...');
+    return SB.confirmCardPayment({ paymentKey: paymentKey, orderId: orderId, amount: amount })
+      .then(function () {
+        clean();
+        return refreshAccess();
+      })
+      .then(function () {
+        U.toast('결제가 완료되었어요. 이용 기간이 늘어났습니다 🎂');
+        return true;
+      })
+      .catch(function (err) {
+        clean();
+        U.toast('결제 확인 실패 — ' + (err.message || '잠시 뒤 구독 화면에서 다시 확인해 주세요'));
+        return false;
+      });
   }
   var access = null;            // { shop_name, trial_ends_at, subscribed_until, active, days_left }
   var mode = 'login';           // 'login' | 'signup' | 'reset'
@@ -275,9 +375,14 @@ window.Auth = (function () {
         '<p class="hint" style="margin-top:10px">부가세 포함 · 가입 후 ' + TRIAL_MONTHS + '개월 무료 · 언제든 해지</p>' +
       '</div>' +
 
+      '<div class="card" id="cardBox" hidden>' +
+        '<h2>💳 카드결제</h2>' +
+        '<div id="cardState"></div>' +
+      '</div>' +
+
       '<div class="card" id="payBox">' +
         '<h2>🏦 무통장입금</h2>' +
-        '<p class="hint">카드 자동결제는 준비 중입니다. 지금은 <b>계좌이체</b>로 받고 있어요.</p>' +
+        '<p class="hint" id="bankLead">계좌이체로도 받고 있어요.</p>' +
         '<div id="payState"><p class="hint">확인하는 중...</p></div>' +
       '</div>' +
 
@@ -334,10 +439,42 @@ window.Auth = (function () {
         chosenPlan = lab.dataset.plan;
         U.$$('.plan', view).forEach(function (el) { el.classList.toggle('on', el.dataset.plan === chosenPlan); });
         drawPayState(view);
+        drawCardState(view);
       }
     });
     drawPayState(view);
+    drawCardState(view);
     drawAdmin(view);
+  }
+
+  /* ---------- 카드결제 버튼 ---------- */
+  function drawCardState(view) {
+    var box = U.$('#cardBox', view), st = U.$('#cardState', view);
+    if (!box || !st) return;
+    var lead = U.$('#bankLead', view);
+
+    if (!CARD.on || !CARD.clientKey) { box.hidden = true; if (lead) lead.innerHTML = '카드 자동결제는 준비 중입니다. 지금은 <b>계좌이체</b>로 받고 있어요.'; return; }
+    box.hidden = false;
+    if (lead) lead.innerHTML = '카드가 어려우시면 <b>계좌이체</b>로도 받습니다.';
+
+    if (!/^https?:$/.test(location.protocol)) {
+      st.innerHTML = '<div class="warn">카드결제는 <b>인터넷 주소(solopreneur111.co.kr)</b>로 접속하셨을 때만 됩니다.<br>' +
+        '파일로 열어 쓰실 때는 아래 계좌이체를 이용해 주세요.</div>';
+      return;
+    }
+
+    var amount = chosenPlan === 'yearly' ? PRICE_YEAR : PRICE;
+    var label = chosenPlan === 'yearly' ? '연 결제' : '월 결제';
+    st.innerHTML =
+      '<div class="bank-box">' +
+        '<div class="bank-row total"><span>' + label + ' 금액</span><b>' + U.won(amount) + '</b></div>' +
+      '</div>' +
+      '<button class="btn wide" id="payCard" style="margin-top:12px">카드로 결제하기</button>' +
+      '<p class="hint" style="margin-top:8px">토스페이먼츠 결제창이 열립니다. 결제가 끝나면 바로 이용 기간이 늘어나요. ' +
+      '카드 정보는 저희 쪽에 저장되지 않습니다.</p>';
+
+    var btn = U.$('#payCard', view);
+    if (btn) btn.onclick = function () { payByCard(chosenPlan, btn); };
   }
 
   function drawPayState(view) {
@@ -420,6 +557,15 @@ window.Auth = (function () {
             '</div>' +
             '<div class="row end"><button class="btn" id="bkSave">계좌 저장</button></div>' +
           '</div>' +
+          '<div class="card"><h2>🔑 카드결제 설정 (관리자)</h2>' +
+            '<p class="hint">토스페이먼츠 개발자센터 &gt; API 키에서 받은 <b>클라이언트 키</b>를 넣어주세요. ' +
+            '<b>시크릿 키는 여기에 넣지 마세요</b> — 시크릿 키는 서버에만 보관합니다.</p>' +
+            '<div class="field"><label>클라이언트 키 (test_ck_ 또는 live_ck_ 로 시작)</label>' +
+              '<input id="tsKey" value="' + U.esc(CARD.clientKey) + '" placeholder="test_ck_xxxxxxxxxxxxxxxx"></div>' +
+            '<label class="row agree"><input type="checkbox" id="tsOn" style="width:auto"' + (CARD.on ? ' checked' : '') + '>' +
+              '<span>회원들에게 카드결제 버튼을 보여줍니다</span></label>' +
+            '<div class="row end"><button class="btn" id="tsSave">카드결제 설정 저장</button></div>' +
+          '</div>' +
           '<div class="card"><h2>🔑 입금 확인 (관리자)</h2>' +
           (!rows || !rows.length
             ? '<div class="empty">확인을 기다리는 입금 신청이 없어요.</div>'
@@ -440,15 +586,34 @@ window.Auth = (function () {
           var cfg = {
             bank: U.$('#bkBank', box).value.trim(),
             account: U.$('#bkAcct', box).value.trim(),
-            holder: U.$('#bkHold', box).value.trim()
+            holder: U.$('#bkHold', box).value.trim(),
+            tossKey: CARD.clientKey, cardEnabled: CARD.on
           };
           save.disabled = true;
           SB.saveServiceConfig(cfg).then(function () {
-            BANK = cfg;
+            BANK = { bank: cfg.bank, account: cfg.account, holder: cfg.holder };
             U.toast('계좌를 저장했어요');
             save.disabled = false;
             drawPayState(view);
           }).catch(function (err) { save.disabled = false; U.toast(err.message); });
+        };
+
+        var tsSave = U.$('#tsSave', box);
+        if (tsSave) tsSave.onclick = function () {
+          var key = U.$('#tsKey', box).value.trim();
+          var on = U.$('#tsOn', box).checked;
+          if (/_sk_|_gsk_/.test(key)) { U.toast('시크릿 키는 넣으면 안 됩니다. 클라이언트 키(ck)를 넣어주세요'); return; }
+          if (on && !/^(test|live)_(ck|gck)_/.test(key)) { U.toast('클라이언트 키 형식이 아닙니다'); return; }
+          tsSave.disabled = true;
+          SB.saveServiceConfig({
+            bank: BANK.bank, account: BANK.account, holder: BANK.holder,
+            tossKey: key, cardEnabled: on
+          }).then(function () {
+            CARD = { on: on, clientKey: key };
+            U.toast(on ? '카드결제를 켰어요' : '카드결제 설정을 저장했어요');
+            tsSave.disabled = false;
+            drawCardState(view);
+          }).catch(function (err) { tsSave.disabled = false; U.toast(err.message); });
         };
 
         box.addEventListener('click', function (e) {
@@ -491,6 +656,7 @@ window.Auth = (function () {
     PRICE: PRICE, TRIAL_MONTHS: TRIAL_MONTHS,
     info: info, refreshAccess: refreshAccess, active: active, onTrial: onTrial, daysLeft: daysLeft,
     renderGate: renderGate, renderExpired: renderExpired, renderSubscribe: renderSubscribe,
-    afterLogin: afterLogin, signOut: signOut, banner: banner
+    afterLogin: afterLogin, signOut: signOut, banner: banner,
+    handleTossReturn: handleTossReturn
   };
 })();

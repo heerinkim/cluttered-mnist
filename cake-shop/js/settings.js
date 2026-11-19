@@ -207,7 +207,7 @@ window.Settings = (function () {
         '<div class="row"><button class="btn" id="ghManualBack">내 저장소 열기</button></div>' +
         '<ol style="padding-left:20px;line-height:2;margin-top:10px">' +
           '<li>열린 화면에서 <b>백업 json 파일</b>을 클릭합니다 ' +
-            '(<code>케이크공방_백업_날짜.json</code> 또는 <code>data</code> 폴더 안)</li>' +
+            '(<code>운영노트_백업_날짜.json</code> 또는 <code>data</code> 폴더 안)</li>' +
           '<li>오른쪽 위 <b>⬇️ (Download raw file)</b> 아이콘을 눌러 내려받습니다</li>' +
           '<li>이 화면 위쪽의 <b>[⬆️ 백업 파일 불러오기]</b> 로 그 파일을 넣으면 자료가 되돌아옵니다</li>' +
         '</ol>' +
@@ -237,7 +237,7 @@ window.Settings = (function () {
     var pagesUrl = 'https://' + owner + '.github.io/cluttered-mnist/cake-shop/';
 
     function guideText(link) {
-      return '[' + (DB.settings().shopName || '케이크 공방') + '] 주문 확인 방법\n\n' +
+      return '[' + (DB.settings().shopName || '내 가게') + '] 주문 확인 방법\n\n' +
         '1) 아래 주소를 눌러 주세요\n' + link + '\n\n' +
         '2) 맨 위 [⚙️ 설정] 을 누르고 아래로 내려서 [☁️ 깃허브 백업] 을 찾으세요\n\n' +
         '3) 아래 두 가지를 그대로 넣어주세요\n' +
@@ -275,7 +275,7 @@ window.Settings = (function () {
         '<p class="hint" style="margin-top:6px">깃허브 저장소 <b>Settings → Pages</b> 에서 브랜치를 고르고 저장하면 만들어지는 주소예요. ' +
         '앱 화면만 열리고 <b>고객 자료는 들어 있지 않습니다</b>(토큰을 넣어야 보입니다).</p></div>' +
       '<div class="info">방법 B · <b>파일 그대로 보내기</b> — ' +
-        '<code>케이크공방-운영노트.html</code> 파일을 카톡으로 보내주면, 알바생이 받아서 더블클릭하면 됩니다. ' +
+        '<code>1인CEO-운영노트.html</code> 파일을 카톡으로 보내주면, 알바생이 받아서 더블클릭하면 됩니다. ' +
         '주소를 만들 필요가 없어 더 간단해요.</div>' +
 
       '<div class="divider"></div>' +
@@ -309,7 +309,7 @@ window.Settings = (function () {
         '<li><b>Settings → Developer settings → Personal access tokens → Fine-grained tokens</b> 로 갑니다<br>' +
           '<span class="cap-sub">주소를 바로 열려면 아래 버튼을 누르세요</span></li>' +
         '<li><b>Generate new token</b> 을 누릅니다</li>' +
-        '<li>이름은 아무거나 (예: 케이크공방), <b>Expiration</b> 은 <b>No expiration</b> 또는 1년으로</li>' +
+        '<li>이름은 아무거나 (예: 운영노트), <b>Expiration</b> 은 <b>No expiration</b> 또는 1년으로</li>' +
         '<li><b>Repository access</b> → <b>Only select repositories</b> → 방금 만든 <code>cake-shop-data</code> 선택</li>' +
         '<li><b>Permissions → Repository permissions → Contents</b> 를 <b>Read and write</b> 로 변경</li>' +
         '<li><b>Generate token</b> → 나온 글자를 <b>복사</b>해서 이 화면의 토큰 칸에 붙여넣기</li>' +
@@ -368,7 +368,7 @@ window.Settings = (function () {
     U.$('#ghManualGo', view).onclick = function () {
       var data = JSON.stringify(DB.exportAll(), null, 2);
       U.downloadBlob(new Blob([data], { type: 'application/json' }),
-        '케이크공방_백업_' + U.today() + '.json');
+        '운영노트_백업_' + U.today() + '.json');
 
       var repo = U.$('#ghRepo', view).value.trim();
       if (!repo) {
@@ -533,7 +533,7 @@ window.Settings = (function () {
     });
     U.$('#sSave', view).onclick = function () {
       DB.saveSettings({
-        shopName: U.$('#sName', view).value.trim() || '케이크 공방',
+        shopName: U.$('#sName', view).value.trim() || '내 가게',
         ownerPhone: U.$('#sPhone', view).value.trim(),
         laborPerCake: U.toNum(U.$('#sLabor', view).value),
         defaultMarginPct: U.toNum(U.$('#sMargin', view).value)
@@ -544,7 +544,7 @@ window.Settings = (function () {
     U.$('#bkExport', view).onclick = function () {
       var data = JSON.stringify(DB.exportAll(), null, 2);
       U.downloadBlob(new Blob([data], { type: 'application/json' }),
-        '케이크공방_백업_' + U.today() + '.json');
+        '운영노트_백업_' + U.today() + '.json');
       U.toast('백업 파일을 내려받았어요');
     };
 

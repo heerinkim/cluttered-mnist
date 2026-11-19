@@ -136,7 +136,7 @@ window.Cloud = (function () {
 
   /* 백업 파일 찾기
      앱이 올린 data/backup.json 뿐 아니라, 사장님이 깃허브 웹에서 직접
-     끌어다 올린 "케이크공방_백업_2026-08-20.json" 같은 파일도 찾아냅니다. */
+     끌어다 올린 "운영노트_백업_2026-08-20.json" 같은 파일도 찾아냅니다. */
   function findBackup() {
     return getFile(DATA_PATH).then(function (f) {
       if (f) return { file: f, path: DATA_PATH };

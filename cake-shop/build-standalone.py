@@ -2,7 +2,7 @@
 """여러 파일로 나뉜 앱을 '파일 하나'로 묶습니다.
 
 사용법:  python3 build-standalone.py
-결과물:  케이크공방-운영노트.html  (이 파일 하나만 있으면 인터넷 없이 실행됩니다)
+결과물:  1인CEO-운영노트.html  (이 파일 하나만 있으면 인터넷 없이 실행됩니다)
 
 css/js 를 고친 뒤에는 이 스크립트를 다시 실행해 주세요.
 """
@@ -10,7 +10,7 @@ import re
 import os
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-OUT_NAME = '케이크공방-운영노트.html'
+OUT_NAME = '1인CEO-운영노트.html'
 
 
 def read(rel):

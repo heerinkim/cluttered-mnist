@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>케이크 공방 운영 노트</title>
+<title>1인CEO 운영노트</title>
 <style>
 :root{
   --cream:#fff9f3;
@@ -300,15 +300,15 @@ code{background:#f6efe9;padding:1px 5px;border-radius:5px;font-size:13px}
 .info{background:#eef6f4;border:1px solid #cfe6e0;border-radius:10px;padding:10px 12px;font-size:13px;color:#2f6b5e}
 
 </style>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📒</text></svg>">
 </head>
 <body>
 
 <header class="topbar">
   <div class="brand">
-    <span class="logo">🎂</span>
+    <span class="logo">📒</span>
     <div>
-      <h1 id="shopName">케이크 공방</h1>
+      <h1 id="shopName">내 가게</h1>
       <p class="sub">주문 · 정산 · 재고 · 원가 관리</p>
     </div>
   </div>
@@ -978,7 +978,7 @@ window.DB = (function () {
 
   /* ---------- 설정 ---------- */
   var DEFAULT_SETTINGS = {
-    shopName: '케이크 공방',
+    shopName: '내 가게',
     ownerPhone: '',
     defaultMarginPct: 65,       // 판매가 제안 시 쓰는 마진율(%)
     laborPerCake: 8000,         // 케이크 1개당 기본 인건비(원)
@@ -2533,7 +2533,7 @@ window.Monthly = (function () {
 
       (live.length ? '<div class="card"><h2>🗓️ 날짜별 합계</h2>' + dailyTable(live) + '</div>' : '') +
 
-      '<div class="card"><h2>🏆 케이크별 순위</h2>' +
+      '<div class="card"><h2>🏆 메뉴별 순위</h2>' +
         (live.length ? rankTable(live) : '<div class="empty">데이터가 없어요.</div>') +
       '</div>';
 
@@ -2840,7 +2840,7 @@ window.Inventory = (function () {
 })();
 
 /* ===== js/gallery.js ===== */
-/* 케이크 디자인 갤러리
+/* 작업 사진 갤러리
    사진은 브라우저 안(IndexedDB)에 저장되고 인터넷으로 올라가지 않습니다. */
 window.Gallery = (function () {
 
@@ -2859,7 +2859,7 @@ window.Gallery = (function () {
 
     view.innerHTML = '' +
       '<div class="card">' +
-        '<div class="row"><h2 style="margin:0">🖼️ 케이크 디자인 갤러리</h2><div class="spacer"></div>' +
+        '<div class="row"><h2 style="margin:0">🖼️ 작업 사진 갤러리</h2><div class="spacer"></div>' +
           '<label class="btn small" for="photoInput" style="margin:0">+ 사진 올리기</label>' +
           '<input type="file" id="photoInput" accept="image/*" multiple style="display:none;width:auto">' +
         '</div>' +
@@ -2871,7 +2871,7 @@ window.Gallery = (function () {
               U.esc(t) + (t === '전체' ? '' : ' ' + tags[t]) + '</button>';
           }).join('') + '</div>' : '') +
         (shown.length ? '<div class="gal" id="galGrid">' + shown.map(card).join('') + '</div>'
-          : '<div class="empty">아직 사진이 없어요.<br>지금까지 만든 케이크 사진을 올려보세요 🎂</div>') +
+          : '<div class="empty">아직 사진이 없어요.<br>지금까지 만든 작업 사진을 올려보세요 📸</div>') +
       '</div>';
 
     bind(view);
@@ -2880,7 +2880,7 @@ window.Gallery = (function () {
 
   function card(p) {
     return '<figure data-photo="' + p.id + '">' +
-      '<img id="img-' + p.id + '" alt="' + U.esc(p.title || '케이크 사진') + '" loading="lazy">' +
+      '<img id="img-' + p.id + '" alt="' + U.esc(p.title || '작업 사진') + '" loading="lazy">' +
       '<figcaption><div class="cap-title">' + U.esc(p.title || '(제목 없음)') + '</div>' +
       '<div class="cap-sub">' + (p.date ? U.korDate(p.date) : '') +
       ((p.tags || []).length ? ' · ' + U.esc(p.tags.join(', ')) : '') + '</div></figcaption></figure>';
@@ -3020,7 +3020,7 @@ window.Notify = (function () {
     var set = DB.settings();
     var price = U.toNum(order.price), dep = U.toNum(order.deposit);
     var map = {
-      '가게이름': set.shopName || '케이크 공방',
+      '가게이름': set.shopName || '내 가게',
       '고객명': order.customerName || '',
       '픽업일': U.korDate(order.pickupDate),
       '픽업시간': order.pickupTime || '',
@@ -3426,7 +3426,7 @@ window.Cloud = (function () {
 
   /* 백업 파일 찾기
      앱이 올린 data/backup.json 뿐 아니라, 사장님이 깃허브 웹에서 직접
-     끌어다 올린 "케이크공방_백업_2026-08-20.json" 같은 파일도 찾아냅니다. */
+     끌어다 올린 "운영노트_백업_2026-08-20.json" 같은 파일도 찾아냅니다. */
   function findBackup() {
     return getFile(DATA_PATH).then(function (f) {
       if (f) return { file: f, path: DATA_PATH };
@@ -3902,7 +3902,7 @@ window.Auth = (function () {
       return loadTossSdk();
     }).then(function (TossPayments) {
       var amount = Number(order.amount);
-      var name = (plan === 'yearly' ? '케이크공방 운영노트 연 구독' : '케이크공방 운영노트 월 구독');
+      var name = (plan === 'yearly' ? '1인CEO 운영노트 연 구독' : '1인CEO 운영노트 월 구독');
       var payment = TossPayments(CARD.clientKey).payment({ customerKey: SB.userId() });
       var base = location.origin + location.pathname;
       return payment.requestPayment({
@@ -3953,7 +3953,7 @@ window.Auth = (function () {
         return refreshAccess();
       })
       .then(function () {
-        U.toast('결제가 완료되었어요. 이용 기간이 늘어났습니다 🎂');
+        U.toast('결제가 완료되었어요. 이용 기간이 늘어났습니다 🎉');
         return true;
       })
       .catch(function (err) {
@@ -3989,8 +3989,8 @@ window.Auth = (function () {
     view.innerHTML =
       '<div class="card auth-card">' +
         '<div class="auth-hero">' +
-          '<div class="auth-logo">🎂</div>' +
-          '<h2>케이크 공방 운영 노트</h2>' +
+          '<div class="auth-logo">📒</div>' +
+          '<h2>1인CEO 운영노트</h2>' +
           '<p class="hint">주문 · 달력 · 정산 · 재고 · 원가 · 갤러리 · 고객알림을 한 곳에서.<br>' +
           '<b>가입 후 ' + TRIAL_MONTHS + '개월 무료</b>, 이후 월 ' + U.won(PRICE) + '.</p>' +
         '</div>' +
@@ -4021,7 +4021,7 @@ window.Auth = (function () {
   function signupForm() {
     return '<form id="signupForm" novalidate>' +
       '<div class="field"><label>가게 이름 <span style="color:var(--rose)">*</span></label>' +
-        '<input name="shopName" placeholder="그랫피케이크" autocomplete="organization"></div>' +
+        '<input name="shopName" placeholder="내 가게 이름" autocomplete="organization"></div>' +
       '<div class="grid two">' +
         '<div class="field"><label>사장님 성함</label>' +
           '<input name="ownerName" placeholder="김희린" autocomplete="name"></div>' +
@@ -4094,9 +4094,9 @@ window.Auth = (function () {
     var items = [
       ['📝', '주문 · 달력', '주문서를 적으면 픽업 날짜에 자동으로 표시'],
       ['📊', '월별 정산', '매출 · 원가 · 이익을 한 표에서, 엑셀로 저장'],
-      ['📦', '재고', '상자 · 보냉백 · 리본이 부족하면 미리 알림'],
-      ['🖼️', '갤러리', '만든 케이크 사진을 태그로 정리'],
-      ['💰', '원가표', '"생화케이크 2단" 적으면 원가와 판매가 계산'],
+      ['📦', '재고', '포장재 · 부자재가 부족하면 미리 알림'],
+      ['🖼️', '갤러리', '완성한 작업 사진을 태그로 정리'],
+      ['💰', '원가표', '메뉴 이름만 적으면 원가와 판매가 계산'],
       ['💬', '고객 알림', '주문 당일 · 픽업 전날 · 픽업 후 문자 자동 작성']
     ];
     return '<div class="card"><h2>무엇을 할 수 있나요</h2><div class="grid two">' +
@@ -4178,13 +4178,13 @@ window.Auth = (function () {
       // 가입할 때 적은 가게 이름을 앱 설정에도 반영
       if (access && access.shop_name) {
         var s = DB.settings();
-        if (!s.shopName || s.shopName === '케이크 공방' || isNew) {
+        if (!s.shopName || s.shopName === '내 가게' || isNew) {
           DB.saveSettings({ shopName: access.shop_name, ownerPhone: access.owner_phone || s.ownerPhone });
         }
       }
       location.hash = '#home';
       App.render(); App.refreshShopName();
-      U.toast(isNew ? '환영합니다! ' + TRIAL_MONTHS + '개월 무료로 시작합니다 🎂' : '로그인했어요');
+      U.toast(isNew ? '환영합니다! ' + TRIAL_MONTHS + '개월 무료로 시작합니다 🎉' : '로그인했어요');
     });
   }
 
@@ -4761,7 +4761,7 @@ window.Settings = (function () {
         '<div class="row"><button class="btn" id="ghManualBack">내 저장소 열기</button></div>' +
         '<ol style="padding-left:20px;line-height:2;margin-top:10px">' +
           '<li>열린 화면에서 <b>백업 json 파일</b>을 클릭합니다 ' +
-            '(<code>케이크공방_백업_날짜.json</code> 또는 <code>data</code> 폴더 안)</li>' +
+            '(<code>운영노트_백업_날짜.json</code> 또는 <code>data</code> 폴더 안)</li>' +
           '<li>오른쪽 위 <b>⬇️ (Download raw file)</b> 아이콘을 눌러 내려받습니다</li>' +
           '<li>이 화면 위쪽의 <b>[⬆️ 백업 파일 불러오기]</b> 로 그 파일을 넣으면 자료가 되돌아옵니다</li>' +
         '</ol>' +
@@ -4791,7 +4791,7 @@ window.Settings = (function () {
     var pagesUrl = 'https://' + owner + '.github.io/cluttered-mnist/cake-shop/';
 
     function guideText(link) {
-      return '[' + (DB.settings().shopName || '케이크 공방') + '] 주문 확인 방법\n\n' +
+      return '[' + (DB.settings().shopName || '내 가게') + '] 주문 확인 방법\n\n' +
         '1) 아래 주소를 눌러 주세요\n' + link + '\n\n' +
         '2) 맨 위 [⚙️ 설정] 을 누르고 아래로 내려서 [☁️ 깃허브 백업] 을 찾으세요\n\n' +
         '3) 아래 두 가지를 그대로 넣어주세요\n' +
@@ -4829,7 +4829,7 @@ window.Settings = (function () {
         '<p class="hint" style="margin-top:6px">깃허브 저장소 <b>Settings → Pages</b> 에서 브랜치를 고르고 저장하면 만들어지는 주소예요. ' +
         '앱 화면만 열리고 <b>고객 자료는 들어 있지 않습니다</b>(토큰을 넣어야 보입니다).</p></div>' +
       '<div class="info">방법 B · <b>파일 그대로 보내기</b> — ' +
-        '<code>케이크공방-운영노트.html</code> 파일을 카톡으로 보내주면, 알바생이 받아서 더블클릭하면 됩니다. ' +
+        '<code>1인CEO-운영노트.html</code> 파일을 카톡으로 보내주면, 알바생이 받아서 더블클릭하면 됩니다. ' +
         '주소를 만들 필요가 없어 더 간단해요.</div>' +
 
       '<div class="divider"></div>' +
@@ -4863,7 +4863,7 @@ window.Settings = (function () {
         '<li><b>Settings → Developer settings → Personal access tokens → Fine-grained tokens</b> 로 갑니다<br>' +
           '<span class="cap-sub">주소를 바로 열려면 아래 버튼을 누르세요</span></li>' +
         '<li><b>Generate new token</b> 을 누릅니다</li>' +
-        '<li>이름은 아무거나 (예: 케이크공방), <b>Expiration</b> 은 <b>No expiration</b> 또는 1년으로</li>' +
+        '<li>이름은 아무거나 (예: 운영노트), <b>Expiration</b> 은 <b>No expiration</b> 또는 1년으로</li>' +
         '<li><b>Repository access</b> → <b>Only select repositories</b> → 방금 만든 <code>cake-shop-data</code> 선택</li>' +
         '<li><b>Permissions → Repository permissions → Contents</b> 를 <b>Read and write</b> 로 변경</li>' +
         '<li><b>Generate token</b> → 나온 글자를 <b>복사</b>해서 이 화면의 토큰 칸에 붙여넣기</li>' +
@@ -4922,7 +4922,7 @@ window.Settings = (function () {
     U.$('#ghManualGo', view).onclick = function () {
       var data = JSON.stringify(DB.exportAll(), null, 2);
       U.downloadBlob(new Blob([data], { type: 'application/json' }),
-        '케이크공방_백업_' + U.today() + '.json');
+        '운영노트_백업_' + U.today() + '.json');
 
       var repo = U.$('#ghRepo', view).value.trim();
       if (!repo) {
@@ -5087,7 +5087,7 @@ window.Settings = (function () {
     });
     U.$('#sSave', view).onclick = function () {
       DB.saveSettings({
-        shopName: U.$('#sName', view).value.trim() || '케이크 공방',
+        shopName: U.$('#sName', view).value.trim() || '내 가게',
         ownerPhone: U.$('#sPhone', view).value.trim(),
         laborPerCake: U.toNum(U.$('#sLabor', view).value),
         defaultMarginPct: U.toNum(U.$('#sMargin', view).value)
@@ -5098,7 +5098,7 @@ window.Settings = (function () {
     U.$('#bkExport', view).onclick = function () {
       var data = JSON.stringify(DB.exportAll(), null, 2);
       U.downloadBlob(new Blob([data], { type: 'application/json' }),
-        '케이크공방_백업_' + U.today() + '.json');
+        '운영노트_백업_' + U.today() + '.json');
       U.toast('백업 파일을 내려받았어요');
     };
 
@@ -5165,7 +5165,7 @@ window.Home = (function () {
 
       '<div class="card">' +
         '<h2>🎂 오늘 픽업 (' + U.korDateFull(today) + ')</h2>' +
-        (todayList.length ? list(todayList) : '<div class="empty">오늘 픽업 예정인 케이크가 없어요.</div>') +
+        (todayList.length ? list(todayList) : '<div class="empty">오늘 픽업 예정이 없어요.</div>') +
       '</div>' +
 
       '<div class="card">' +
@@ -5329,12 +5329,12 @@ window.App = (function () {
 
   function refreshShopName() {
     var s = DB.settings();
-    var name = s.shopName || '케이크 공방';
+    var name = s.shopName || '내 가게';
     U.$('#shopName').textContent = name;
     // 보낼 알림이 있으면 브라우저 탭 제목에 건수를 붙여 놓치지 않게 함
     var n = 0;
     try { n = Notify.totalCount(); } catch (e) { n = 0; }
-    document.title = (n ? '(' + n + ') ' : '') + name + ' 운영 노트';
+    document.title = (n ? '(' + n + ') ' : '') + name + ' · 1인CEO 운영노트';
     refreshAcctChip();
   }
 

@@ -54,7 +54,7 @@ window.Auth = (function () {
       return loadTossSdk();
     }).then(function (TossPayments) {
       var amount = Number(order.amount);
-      var name = (plan === 'yearly' ? '케이크공방 운영노트 연 구독' : '케이크공방 운영노트 월 구독');
+      var name = (plan === 'yearly' ? '1인CEO 운영노트 연 구독' : '1인CEO 운영노트 월 구독');
       var payment = TossPayments(CARD.clientKey).payment({ customerKey: SB.userId() });
       var base = location.origin + location.pathname;
       return payment.requestPayment({
@@ -105,7 +105,7 @@ window.Auth = (function () {
         return refreshAccess();
       })
       .then(function () {
-        U.toast('결제가 완료되었어요. 이용 기간이 늘어났습니다 🎂');
+        U.toast('결제가 완료되었어요. 이용 기간이 늘어났습니다 🎉');
         return true;
       })
       .catch(function (err) {
@@ -141,8 +141,8 @@ window.Auth = (function () {
     view.innerHTML =
       '<div class="card auth-card">' +
         '<div class="auth-hero">' +
-          '<div class="auth-logo">🎂</div>' +
-          '<h2>케이크 공방 운영 노트</h2>' +
+          '<div class="auth-logo">📒</div>' +
+          '<h2>1인CEO 운영노트</h2>' +
           '<p class="hint">주문 · 달력 · 정산 · 재고 · 원가 · 갤러리 · 고객알림을 한 곳에서.<br>' +
           '<b>가입 후 ' + TRIAL_MONTHS + '개월 무료</b>, 이후 월 ' + U.won(PRICE) + '.</p>' +
         '</div>' +
@@ -173,7 +173,7 @@ window.Auth = (function () {
   function signupForm() {
     return '<form id="signupForm" novalidate>' +
       '<div class="field"><label>가게 이름 <span style="color:var(--rose)">*</span></label>' +
-        '<input name="shopName" placeholder="그랫피케이크" autocomplete="organization"></div>' +
+        '<input name="shopName" placeholder="내 가게 이름" autocomplete="organization"></div>' +
       '<div class="grid two">' +
         '<div class="field"><label>사장님 성함</label>' +
           '<input name="ownerName" placeholder="김희린" autocomplete="name"></div>' +
@@ -246,9 +246,9 @@ window.Auth = (function () {
     var items = [
       ['📝', '주문 · 달력', '주문서를 적으면 픽업 날짜에 자동으로 표시'],
       ['📊', '월별 정산', '매출 · 원가 · 이익을 한 표에서, 엑셀로 저장'],
-      ['📦', '재고', '상자 · 보냉백 · 리본이 부족하면 미리 알림'],
-      ['🖼️', '갤러리', '만든 케이크 사진을 태그로 정리'],
-      ['💰', '원가표', '"생화케이크 2단" 적으면 원가와 판매가 계산'],
+      ['📦', '재고', '포장재 · 부자재가 부족하면 미리 알림'],
+      ['🖼️', '갤러리', '완성한 작업 사진을 태그로 정리'],
+      ['💰', '원가표', '메뉴 이름만 적으면 원가와 판매가 계산'],
       ['💬', '고객 알림', '주문 당일 · 픽업 전날 · 픽업 후 문자 자동 작성']
     ];
     return '<div class="card"><h2>무엇을 할 수 있나요</h2><div class="grid two">' +
@@ -330,13 +330,13 @@ window.Auth = (function () {
       // 가입할 때 적은 가게 이름을 앱 설정에도 반영
       if (access && access.shop_name) {
         var s = DB.settings();
-        if (!s.shopName || s.shopName === '케이크 공방' || isNew) {
+        if (!s.shopName || s.shopName === '내 가게' || isNew) {
           DB.saveSettings({ shopName: access.shop_name, ownerPhone: access.owner_phone || s.ownerPhone });
         }
       }
       location.hash = '#home';
       App.render(); App.refreshShopName();
-      U.toast(isNew ? '환영합니다! ' + TRIAL_MONTHS + '개월 무료로 시작합니다 🎂' : '로그인했어요');
+      U.toast(isNew ? '환영합니다! ' + TRIAL_MONTHS + '개월 무료로 시작합니다 🎉' : '로그인했어요');
     });
   }
 

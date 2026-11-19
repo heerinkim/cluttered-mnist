@@ -47,7 +47,7 @@ window.Monthly = (function () {
 
       (live.length ? '<div class="card"><h2>🗓️ 날짜별 합계</h2>' + dailyTable(live) + '</div>' : '') +
 
-      '<div class="card"><h2>🏆 케이크별 순위</h2>' +
+      '<div class="card"><h2>🏆 메뉴별 순위</h2>' +
         (live.length ? rankTable(live) : '<div class="empty">데이터가 없어요.</div>') +
       '</div>';
 

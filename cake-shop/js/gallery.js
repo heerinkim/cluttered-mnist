@@ -1,4 +1,4 @@
-/* 케이크 디자인 갤러리
+/* 작업 사진 갤러리
    사진은 브라우저 안(IndexedDB)에 저장되고 인터넷으로 올라가지 않습니다. */
 window.Gallery = (function () {
 
@@ -17,7 +17,7 @@ window.Gallery = (function () {
 
     view.innerHTML = '' +
       '<div class="card">' +
-        '<div class="row"><h2 style="margin:0">🖼️ 케이크 디자인 갤러리</h2><div class="spacer"></div>' +
+        '<div class="row"><h2 style="margin:0">🖼️ 작업 사진 갤러리</h2><div class="spacer"></div>' +
           '<label class="btn small" for="photoInput" style="margin:0">+ 사진 올리기</label>' +
           '<input type="file" id="photoInput" accept="image/*" multiple style="display:none;width:auto">' +
         '</div>' +
@@ -29,7 +29,7 @@ window.Gallery = (function () {
               U.esc(t) + (t === '전체' ? '' : ' ' + tags[t]) + '</button>';
           }).join('') + '</div>' : '') +
         (shown.length ? '<div class="gal" id="galGrid">' + shown.map(card).join('') + '</div>'
-          : '<div class="empty">아직 사진이 없어요.<br>지금까지 만든 케이크 사진을 올려보세요 🎂</div>') +
+          : '<div class="empty">아직 사진이 없어요.<br>지금까지 만든 작업 사진을 올려보세요 📸</div>') +
       '</div>';
 
     bind(view);
@@ -38,7 +38,7 @@ window.Gallery = (function () {
 
   function card(p) {
     return '<figure data-photo="' + p.id + '">' +
-      '<img id="img-' + p.id + '" alt="' + U.esc(p.title || '케이크 사진') + '" loading="lazy">' +
+      '<img id="img-' + p.id + '" alt="' + U.esc(p.title || '작업 사진') + '" loading="lazy">' +
       '<figcaption><div class="cap-title">' + U.esc(p.title || '(제목 없음)') + '</div>' +
       '<div class="cap-sub">' + (p.date ? U.korDate(p.date) : '') +
       ((p.tags || []).length ? ' · ' + U.esc(p.tags.join(', ')) : '') + '</div></figcaption></figure>';

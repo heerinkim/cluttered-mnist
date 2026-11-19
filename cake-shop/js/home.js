@@ -28,7 +28,7 @@ window.Home = (function () {
 
       '<div class="card">' +
         '<h2>🎂 오늘 픽업 (' + U.korDateFull(today) + ')</h2>' +
-        (todayList.length ? list(todayList) : '<div class="empty">오늘 픽업 예정인 케이크가 없어요.</div>') +
+        (todayList.length ? list(todayList) : '<div class="empty">오늘 픽업 예정이 없어요.</div>') +
       '</div>' +
 
       '<div class="card">' +

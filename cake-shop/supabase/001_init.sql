@@ -1,4 +1,4 @@
--- 케이크 공방 운영 노트 - 회원제 전환 스키마
+-- 1인CEO 운영노트 - 회원제 전환 스키마
 --
 -- 설계 원칙
 --  1) 가게마다 자기 자료만 보이게 (Row Level Security)
@@ -9,7 +9,7 @@
 -- ───────────────────────── 가게(회원) ─────────────────────────
 create table if not exists public.shops (
   id               uuid primary key references auth.users(id) on delete cascade,
-  shop_name        text        not null default '내 케이크 공방',
+  shop_name        text        not null default '내 가게',
   owner_name       text,
   owner_phone      text,
   trial_ends_at    timestamptz not null default (now() + interval '3 months'),
@@ -90,7 +90,7 @@ begin
   insert into public.shops (id, shop_name, owner_name, owner_phone)
   values (
     new.id,
-    coalesce(nullif(trim(new.raw_user_meta_data->>'shop_name'), ''), '내 케이크 공방'),
+    coalesce(nullif(trim(new.raw_user_meta_data->>'shop_name'), ''), '내 가게'),
     nullif(trim(new.raw_user_meta_data->>'owner_name'), ''),
     nullif(trim(new.raw_user_meta_data->>'owner_phone'), '')
   )

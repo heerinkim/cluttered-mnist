@@ -96,7 +96,7 @@ window.DB = (function () {
 
   /* ---------- 설정 ---------- */
   var DEFAULT_SETTINGS = {
-    shopName: '케이크 공방',
+    shopName: '내 가게',
     ownerPhone: '',
     defaultMarginPct: 65,       // 판매가 제안 시 쓰는 마진율(%)
     laborPerCake: 8000,         // 케이크 1개당 기본 인건비(원)

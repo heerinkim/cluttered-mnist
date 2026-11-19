@@ -86,12 +86,12 @@ window.App = (function () {
 
   function refreshShopName() {
     var s = DB.settings();
-    var name = s.shopName || '케이크 공방';
+    var name = s.shopName || '내 가게';
     U.$('#shopName').textContent = name;
     // 보낼 알림이 있으면 브라우저 탭 제목에 건수를 붙여 놓치지 않게 함
     var n = 0;
     try { n = Notify.totalCount(); } catch (e) { n = 0; }
-    document.title = (n ? '(' + n + ') ' : '') + name + ' 운영 노트';
+    document.title = (n ? '(' + n + ') ' : '') + name + ' · 1인CEO 운영노트';
     refreshAcctChip();
   }
 

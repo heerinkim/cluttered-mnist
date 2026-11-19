@@ -15,7 +15,7 @@ window.Notify = (function () {
     var set = DB.settings();
     var price = U.toNum(order.price), dep = U.toNum(order.deposit);
     var map = {
-      '가게이름': set.shopName || '케이크 공방',
+      '가게이름': set.shopName || '내 가게',
       '고객명': order.customerName || '',
       '픽업일': U.korDate(order.pickupDate),
       '픽업시간': order.pickupTime || '',

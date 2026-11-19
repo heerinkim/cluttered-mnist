@@ -558,7 +558,9 @@ window.Auth = (function () {
             '<div class="row end"><button class="btn" id="bkSave">계좌 저장</button></div>' +
           '</div>' +
           '<div class="card"><h2>🔑 카드결제 설정 (관리자)</h2>' +
-            '<p class="hint">토스페이먼츠 개발자센터 &gt; API 키에서 받은 <b>클라이언트 키</b>를 넣어주세요. ' +
+            '<p class="hint">토스페이먼츠 개발자센터 &gt; API 키 화면의 <b>"API 개별 연동 키"</b> 칸에 있는 ' +
+            '<b>클라이언트 키</b>를 넣어주세요. (<code>test_ck_</code> / <code>live_ck_</code> 로 시작)<br>' +
+            '"주문서형·결제창형" 칸의 <code>gck</code> 키는 이 방식에서 쓸 수 없습니다. ' +
             '<b>시크릿 키는 여기에 넣지 마세요</b> — 시크릿 키는 서버에만 보관합니다.</p>' +
             '<div class="field"><label>클라이언트 키 (test_ck_ 또는 live_ck_ 로 시작)</label>' +
               '<input id="tsKey" value="' + U.esc(CARD.clientKey) + '" placeholder="test_ck_xxxxxxxxxxxxxxxx"></div>' +
@@ -602,8 +604,12 @@ window.Auth = (function () {
         if (tsSave) tsSave.onclick = function () {
           var key = U.$('#tsKey', box).value.trim();
           var on = U.$('#tsOn', box).checked;
-          if (/_sk_|_gsk_/.test(key)) { U.toast('시크릿 키는 넣으면 안 됩니다. 클라이언트 키(ck)를 넣어주세요'); return; }
-          if (on && !/^(test|live)_(ck|gck)_/.test(key)) { U.toast('클라이언트 키 형식이 아닙니다'); return; }
+          if (/_sk_|_gsk_/.test(key)) { U.toast('시크릿 키는 넣으면 안 됩니다. 클라이언트 키를 넣어주세요'); return; }
+          if (/^(test|live)_gck_/.test(key)) {
+            U.toast('이 키는 "주문서형·결제창형" 키예요. "API 개별 연동 키"의 test_ck_ / live_ck_ 키를 넣어주세요');
+            return;
+          }
+          if (on && !/^(test|live)_ck_/.test(key)) { U.toast('클라이언트 키는 test_ck_ 또는 live_ck_ 로 시작해야 합니다'); return; }
           tsSave.disabled = true;
           SB.saveServiceConfig({
             bank: BANK.bank, account: BANK.account, holder: BANK.holder,

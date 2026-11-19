@@ -627,7 +627,7 @@ window.SB = (function () {
 
   /* ---------- 회원가입 / 로그인 ---------- */
   function signUp(info) {
-    return request('/auth/v1/signup', {
+    return request('/auth/v1/signup?redirect_to=' + encodeURIComponent(appUrl()), {
       method: 'POST', noAuth: true,
       body: JSON.stringify({
         email: String(info.email || '').trim(),
@@ -659,10 +659,39 @@ window.SB = (function () {
   }
 
   function resetPassword(email) {
-    return request('/auth/v1/recover', {
+    return request('/auth/v1/recover?redirect_to=' + encodeURIComponent(appUrl()), {
       method: 'POST', noAuth: true,
       body: JSON.stringify({ email: String(email || '').trim() })
     });
+  }
+
+  // 메일 링크를 눌렀을 때 돌아올 주소 (파일로 열어 쓰는 경우는 보내지 않습니다)
+  function appUrl() {
+    if (!/^https?:$/.test(location.protocol)) return 'https://solopreneur111.co.kr/';
+    return location.origin + location.pathname;
+  }
+
+  /* 비밀번호 재설정 메일의 링크를 누르면 주소 끝에 로그인 정보가 붙어서 돌아옵니다.
+     그것을 주워서 로그인 상태로 만들어 줍니다. */
+  function captureUrlSession() {
+    var h = String(location.hash || '');
+    if (h.indexOf('access_token=') < 0) return null;
+    var p = new URLSearchParams(h.replace(/^#/, ''));
+    var at = p.get('access_token');
+    if (!at) return null;
+    var kind = p.get('type') || '';
+    saveSession({
+      access_token: at,
+      refresh_token: p.get('refresh_token') || '',
+      expires_at: Math.floor(Date.now() / 1000) + Number(p.get('expires_in') || 3600),
+      user: null
+    });
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    // 사용자 정보를 채워 둡니다
+    return auth('/auth/v1/user').then(function (u) {
+      if (u && u.id) saveSession(Object.assign({}, session, { user: u }));
+      return kind;
+    }).catch(function () { return kind; });
   }
 
   function changePassword(newPassword) {
@@ -845,7 +874,8 @@ window.SB = (function () {
     myPayments: myPayments,
     uploadPhoto: uploadPhoto, downloadPhoto: downloadPhoto, deletePhoto: deletePhoto,
     startCardPayment: startCardPayment, confirmCardPayment: confirmCardPayment,
-    failCardPayment: failCardPayment
+    failCardPayment: failCardPayment,
+    captureUrlSession: captureUrlSession
   };
 })();
 
@@ -3934,6 +3964,9 @@ window.Auth = (function () {
   }
   var access = null;            // { shop_name, trial_ends_at, subscribed_until, active, days_left }
   var mode = 'login';           // 'login' | 'signup' | 'reset'
+  var recovering = false;       // 비밀번호 재설정 링크로 들어온 상태
+  function isRecovering() { return recovering; }
+  function setRecovering(v) { recovering = !!v; }
 
   function info() { return access; }
   function setAccess(a) { access = a; return a; }
@@ -4014,6 +4047,37 @@ window.Auth = (function () {
       '</div>' +
       '<button class="btn wide" type="submit" style="margin-top:12px">' + TRIAL_MONTHS + '개월 무료로 시작하기</button>' +
     '</form>';
+  }
+
+  /* 비밀번호 재설정 메일의 링크를 눌러서 들어온 경우 */
+  function renderNewPassword(view) {
+    view.innerHTML =
+      '<div class="card auth-card">' +
+        '<div class="auth-hero"><div class="auth-logo">🔑</div>' +
+          '<h2>새 비밀번호 정하기</h2>' +
+          '<p class="hint">쓰실 비밀번호를 새로 정해주세요. 정하고 나면 바로 들어갑니다.</p></div>' +
+        '<form id="npForm" novalidate>' +
+          '<div class="field"><label>새 비밀번호</label>' +
+            '<input name="p1" type="password" autocomplete="new-password" placeholder="6자 이상"></div>' +
+          '<div class="field"><label>새 비밀번호 확인</label>' +
+            '<input name="p2" type="password" autocomplete="new-password"></div>' +
+          '<button class="btn wide" type="submit">비밀번호 바꾸기</button>' +
+        '</form>' +
+        '<div id="authMsg"></div>' +
+      '</div>';
+
+    U.$('#npForm', view).onsubmit = function (e) {
+      e.preventDefault();
+      var f = e.target;
+      if ((f.p1.value || '').length < 6) { msg('비밀번호는 6자 이상으로 정해주세요.'); return; }
+      if (f.p1.value !== f.p2.value) { msg('두 비밀번호가 서로 달라요.'); return; }
+      busy(f, true); msg('바꾸는 중...', 'info');
+      SB.changePassword(f.p1.value).then(function () {
+        recovering = false;
+        U.toast('비밀번호를 바꿨어요');
+        return afterLogin();
+      }).catch(function (err) { busy(f, false); msg(U.esc(err.message)); });
+    };
   }
 
   function resetForm() {
@@ -4481,7 +4545,9 @@ window.Auth = (function () {
     info: info, refreshAccess: refreshAccess, active: active, onTrial: onTrial, daysLeft: daysLeft,
     renderGate: renderGate, renderExpired: renderExpired, renderSubscribe: renderSubscribe,
     afterLogin: afterLogin, signOut: signOut, banner: banner,
-    handleTossReturn: handleTossReturn
+    handleTossReturn: handleTossReturn,
+    renderNewPassword: renderNewPassword,
+    isRecovering: isRecovering, setRecovering: setRecovering
   };
 })();
 
@@ -5207,6 +5273,13 @@ window.App = (function () {
     view.id = 'view';
     view.className = 'view';
     old.parentNode.replaceChild(view, old);
+    // 비밀번호 재설정 링크로 들어왔으면 새 비밀번호부터 정합니다
+    if (Auth.isRecovering()) {
+      document.body.classList.add('logged-out');
+      try { Auth.renderNewPassword(view); } catch (e) { console.error(e); }
+      window.scrollTo({ top: 0 });
+      return;
+    }
     // 로그인하지 않았으면 회원가입 / 로그인 화면만 보여줍니다
     if (!SB.loggedIn()) {
       document.body.classList.add('logged-out');
@@ -5283,6 +5356,9 @@ window.App = (function () {
 
   function start() {
     SB.loadSession();
+    // 메일 링크(인증·비밀번호 재설정)를 눌러서 들어온 경우 주소에 붙어 온 로그인 정보를 받습니다
+    var urlSession = null;
+    try { urlSession = SB.captureUrlSession(); } catch (e) { urlSession = null; }
     if (SB.loggedIn()) DB.setScope(SB.userId());
     Seed.installIfEmpty();
     refreshShopName();
@@ -5305,6 +5381,20 @@ window.App = (function () {
       U.toast('저장이 안 되는 환경이에요. 설정 화면의 안내를 확인해 주세요.');
     }
     render();
+
+    // 메일 링크로 들어온 경우: 비밀번호 재설정이면 새 비밀번호 화면, 그 밖에는 바로 로그인
+    if (urlSession && urlSession.then) {
+      urlSession.then(function (kind) {
+        if (kind === 'recovery') {
+          Auth.setRecovering(true);
+          render();
+          return;
+        }
+        DB.setScope(SB.userId());
+        return Auth.afterLogin().catch(function () { render(); });
+      }).catch(function () { render(); });
+      return;
+    }
 
     // 로그인 상태면 서버에서 최신 자료를 가져오고 자동 저장을 켭니다
     if (SB.loggedIn()) {

@@ -116,6 +116,9 @@ window.Auth = (function () {
   }
   var access = null;            // { shop_name, trial_ends_at, subscribed_until, active, days_left }
   var mode = 'login';           // 'login' | 'signup' | 'reset'
+  var recovering = false;       // 비밀번호 재설정 링크로 들어온 상태
+  function isRecovering() { return recovering; }
+  function setRecovering(v) { recovering = !!v; }
 
   function info() { return access; }
   function setAccess(a) { access = a; return a; }
@@ -196,6 +199,37 @@ window.Auth = (function () {
       '</div>' +
       '<button class="btn wide" type="submit" style="margin-top:12px">' + TRIAL_MONTHS + '개월 무료로 시작하기</button>' +
     '</form>';
+  }
+
+  /* 비밀번호 재설정 메일의 링크를 눌러서 들어온 경우 */
+  function renderNewPassword(view) {
+    view.innerHTML =
+      '<div class="card auth-card">' +
+        '<div class="auth-hero"><div class="auth-logo">🔑</div>' +
+          '<h2>새 비밀번호 정하기</h2>' +
+          '<p class="hint">쓰실 비밀번호를 새로 정해주세요. 정하고 나면 바로 들어갑니다.</p></div>' +
+        '<form id="npForm" novalidate>' +
+          '<div class="field"><label>새 비밀번호</label>' +
+            '<input name="p1" type="password" autocomplete="new-password" placeholder="6자 이상"></div>' +
+          '<div class="field"><label>새 비밀번호 확인</label>' +
+            '<input name="p2" type="password" autocomplete="new-password"></div>' +
+          '<button class="btn wide" type="submit">비밀번호 바꾸기</button>' +
+        '</form>' +
+        '<div id="authMsg"></div>' +
+      '</div>';
+
+    U.$('#npForm', view).onsubmit = function (e) {
+      e.preventDefault();
+      var f = e.target;
+      if ((f.p1.value || '').length < 6) { msg('비밀번호는 6자 이상으로 정해주세요.'); return; }
+      if (f.p1.value !== f.p2.value) { msg('두 비밀번호가 서로 달라요.'); return; }
+      busy(f, true); msg('바꾸는 중...', 'info');
+      SB.changePassword(f.p1.value).then(function () {
+        recovering = false;
+        U.toast('비밀번호를 바꿨어요');
+        return afterLogin();
+      }).catch(function (err) { busy(f, false); msg(U.esc(err.message)); });
+    };
   }
 
   function resetForm() {
@@ -663,6 +697,8 @@ window.Auth = (function () {
     info: info, refreshAccess: refreshAccess, active: active, onTrial: onTrial, daysLeft: daysLeft,
     renderGate: renderGate, renderExpired: renderExpired, renderSubscribe: renderSubscribe,
     afterLogin: afterLogin, signOut: signOut, banner: banner,
-    handleTossReturn: handleTossReturn
+    handleTossReturn: handleTossReturn,
+    renderNewPassword: renderNewPassword,
+    isRecovering: isRecovering, setRecovering: setRecovering
   };
 })();

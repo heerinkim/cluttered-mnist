@@ -30,6 +30,13 @@ window.App = (function () {
     view.id = 'view';
     view.className = 'view';
     old.parentNode.replaceChild(view, old);
+    // 비밀번호 재설정 링크로 들어왔으면 새 비밀번호부터 정합니다
+    if (Auth.isRecovering()) {
+      document.body.classList.add('logged-out');
+      try { Auth.renderNewPassword(view); } catch (e) { console.error(e); }
+      window.scrollTo({ top: 0 });
+      return;
+    }
     // 로그인하지 않았으면 회원가입 / 로그인 화면만 보여줍니다
     if (!SB.loggedIn()) {
       document.body.classList.add('logged-out');
@@ -106,6 +113,9 @@ window.App = (function () {
 
   function start() {
     SB.loadSession();
+    // 메일 링크(인증·비밀번호 재설정)를 눌러서 들어온 경우 주소에 붙어 온 로그인 정보를 받습니다
+    var urlSession = null;
+    try { urlSession = SB.captureUrlSession(); } catch (e) { urlSession = null; }
     if (SB.loggedIn()) DB.setScope(SB.userId());
     Seed.installIfEmpty();
     refreshShopName();
@@ -128,6 +138,20 @@ window.App = (function () {
       U.toast('저장이 안 되는 환경이에요. 설정 화면의 안내를 확인해 주세요.');
     }
     render();
+
+    // 메일 링크로 들어온 경우: 비밀번호 재설정이면 새 비밀번호 화면, 그 밖에는 바로 로그인
+    if (urlSession && urlSession.then) {
+      urlSession.then(function (kind) {
+        if (kind === 'recovery') {
+          Auth.setRecovering(true);
+          render();
+          return;
+        }
+        DB.setScope(SB.userId());
+        return Auth.afterLogin().catch(function () { render(); });
+      }).catch(function () { render(); });
+      return;
+    }
 
     // 로그인 상태면 서버에서 최신 자료를 가져오고 자동 저장을 켭니다
     if (SB.loggedIn()) {

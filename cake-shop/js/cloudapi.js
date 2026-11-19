@@ -129,7 +129,7 @@ window.SB = (function () {
 
   /* ---------- 회원가입 / 로그인 ---------- */
   function signUp(info) {
-    return request('/auth/v1/signup', {
+    return request('/auth/v1/signup?redirect_to=' + encodeURIComponent(appUrl()), {
       method: 'POST', noAuth: true,
       body: JSON.stringify({
         email: String(info.email || '').trim(),
@@ -161,10 +161,39 @@ window.SB = (function () {
   }
 
   function resetPassword(email) {
-    return request('/auth/v1/recover', {
+    return request('/auth/v1/recover?redirect_to=' + encodeURIComponent(appUrl()), {
       method: 'POST', noAuth: true,
       body: JSON.stringify({ email: String(email || '').trim() })
     });
+  }
+
+  // 메일 링크를 눌렀을 때 돌아올 주소 (파일로 열어 쓰는 경우는 보내지 않습니다)
+  function appUrl() {
+    if (!/^https?:$/.test(location.protocol)) return 'https://solopreneur111.co.kr/';
+    return location.origin + location.pathname;
+  }
+
+  /* 비밀번호 재설정 메일의 링크를 누르면 주소 끝에 로그인 정보가 붙어서 돌아옵니다.
+     그것을 주워서 로그인 상태로 만들어 줍니다. */
+  function captureUrlSession() {
+    var h = String(location.hash || '');
+    if (h.indexOf('access_token=') < 0) return null;
+    var p = new URLSearchParams(h.replace(/^#/, ''));
+    var at = p.get('access_token');
+    if (!at) return null;
+    var kind = p.get('type') || '';
+    saveSession({
+      access_token: at,
+      refresh_token: p.get('refresh_token') || '',
+      expires_at: Math.floor(Date.now() / 1000) + Number(p.get('expires_in') || 3600),
+      user: null
+    });
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    // 사용자 정보를 채워 둡니다
+    return auth('/auth/v1/user').then(function (u) {
+      if (u && u.id) saveSession(Object.assign({}, session, { user: u }));
+      return kind;
+    }).catch(function () { return kind; });
   }
 
   function changePassword(newPassword) {
@@ -347,6 +376,7 @@ window.SB = (function () {
     myPayments: myPayments,
     uploadPhoto: uploadPhoto, downloadPhoto: downloadPhoto, deletePhoto: deletePhoto,
     startCardPayment: startCardPayment, confirmCardPayment: confirmCardPayment,
-    failCardPayment: failCardPayment
+    failCardPayment: failCardPayment,
+    captureUrlSession: captureUrlSession
   };
 })();

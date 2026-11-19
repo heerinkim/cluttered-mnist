@@ -74,19 +74,23 @@ window.Home = (function () {
     return '<div class="stat ' + cls + '"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>';
   }
 
-  // 백업한 지 오래됐으면 알려줍니다 (자료를 잃지 않는 게 제일 중요해서)
+  // 서버 저장이 막혀 있을 때만 알려줍니다 (평소에는 아무것도 띄우지 않습니다)
   function backupReminder() {
-    var last = Cloud.cfg().lastSyncAt;
-    var days = last ? U.diffDays(last.slice(0, 10), U.today()) : 999;
-    if (days < 3) return '';
-    var msg = !last
-      ? '아직 깃허브에 백업한 적이 없어요. 컴퓨터가 고장 나면 자료가 사라집니다.'
-      : '마지막 백업이 <b>' + days + '일 전</b>이에요. 오늘 자료를 올려두세요.';
-    return '<div class="card"><h2>☁️ 백업하셨나요?</h2>' +
-      '<div class="warn">' + msg + '</div>' +
+    var st;
+    try { st = Sync.status(); } catch (err) { return ''; }
+    if (!SB.loggedIn()) return '';
+    if (!st.error && st.pending < 20) return '';
+    var msg = st.error
+      ? '서버에 저장하지 못하고 있어요 — ' + U.esc(String(st.error).split('\n')[0])
+      : '서버에 아직 못 보낸 변경이 <b>' + st.pending + '건</b> 있어요.';
+    return '<div class="card"><h2>⚠️ 저장 상태</h2>' +
+      '<div class="warn">' + msg + '<br>' +
+      '인터넷 연결을 확인해 주세요. 그동안 입력하신 내용은 이 컴퓨터에 안전하게 남아 있고, ' +
+      '연결되면 자동으로 올라갑니다.</div>' +
       '<div class="row" style="margin-top:12px">' +
-      '<button class="btn" data-go="settings">지금 백업하러 가기 →</button></div></div>';
+      '<button class="btn ghost" data-go="settings">백업 파일 받아두기 →</button></div></div>';
   }
+
 
   function list(orders) {
     return '<div class="table-wrap"><table><thead><tr><th>시간</th><th>고객</th><th>주문내용</th><th class="num">잔금</th><th>상태</th></tr></thead><tbody>' +

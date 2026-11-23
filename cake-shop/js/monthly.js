@@ -31,6 +31,7 @@ window.Monthly = (function () {
           tile('총 원가', U.won(cost), 'amber') +
           tile('순이익', U.won(profit) + ' (' + rate + '%)', 'mint') +
         '</div>' +
+        hourlyBox(live, profit) +
         (deposit ? '<p class="hint" style="margin-top:10px">받은 예약금 중 아직 픽업 전인 금액: <b>' + U.won(deposit) + '</b></p>' : '') +
         costNotice(fromMenu, noCost) +
       '</div>' +
@@ -75,6 +76,39 @@ window.Monthly = (function () {
   function sum(arr, key) {
     return arr.reduce(function (a, o) { return a + U.toNum(o[key]); }, 0);
   }
+  /* 시간당 얼마 벌었나 — 주문에 '걸린 시간'을 적은 것만 가지고 계산합니다 */
+  var MIN_WAGE = 10320;            // 2026년 최저임금 시급
+
+  function hourlyBox(live, profit) {
+    var withHours = live.filter(function (o) { return U.toNum(o.hours) > 0; });
+    if (!withHours.length) {
+      return '<div class="info" style="margin-top:12px">' +
+        '⏱️ <b>시간당 얼마 버는지 보고 싶으세요?</b> 주문을 적으실 때 ' +
+        '<b>걸린 시간</b>만 같이 적어두시면, 여기에 시간당 수익이 나옵니다.</div>';
+    }
+    var hours = withHours.reduce(function (s, o) { return s + U.toNum(o.hours); }, 0);
+    var hProfit = withHours.reduce(function (s, o) {
+      return s + (U.toNum(o.price) - Cost.orderCost(o).value);
+    }, 0);
+    var per = hours > 0 ? hProfit / hours : 0;
+    var cls = per < MIN_WAGE ? 'red' : (per < MIN_WAGE * 1.5 ? 'amber' : 'mint');
+    var say = per < MIN_WAGE
+      ? '최저임금(시급 ' + U.won(MIN_WAGE) + ')<b>보다 적습니다.</b> 가격이나 만드는 시간을 손봐야 합니다.'
+      : (per < MIN_WAGE * 1.5
+          ? '최저임금은 넘겼지만 여유가 크지 않습니다.'
+          : '최저임금의 <b>' + (per / MIN_WAGE).toFixed(1) + '배</b>입니다.');
+    var part = withHours.length < live.length
+      ? ' <span class="cap-sub">(시간을 적은 ' + withHours.length + '건 기준)</span>' : '';
+
+    return '<div class="grid three" style="margin-top:12px">' +
+        tile('일한 시간', hours.toFixed(1) + '시간', '') +
+        tile('그 주문들의 이익', U.won(hProfit), '') +
+        tile('시간당', U.won(per), cls) +
+      '</div>' +
+      '<p class="hint" style="margin-top:8px">⏱️ 시간당 <b>' + U.won(per) + '</b> — ' + say + part + '<br>' +
+      '<span class="cap-sub">임대료·전기요금 같은 고정비는 빠져 있습니다.</span></p>';
+  }
+
   function tile(label, value, cls) {
     return '<div class="stat ' + cls + '"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>';
   }

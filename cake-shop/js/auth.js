@@ -1,8 +1,8 @@
 /* 회원가입 · 로그인 · 이용 기간(무료 체험 / 구독) 화면 */
 window.Auth = (function () {
 
-  var PRICE = 9900;             // 월 구독료
-  var PRICE_YEAR = 99000;       // 연 구독료 (2개월 무료)
+  var PRICE = 5900;             // 월 구독료
+  var PRICE_YEAR = 59000;       // 연 구독료 (2개월 무료)
   var TRIAL_MONTHS = 2;         // 무료 체험 기간
 
   /* 무통장입금 받을 계좌 — 관리자가 구독 화면에서 직접 입력합니다 (서버에 저장) */
@@ -143,6 +143,7 @@ window.Auth = (function () {
     view.innerHTML = landing() + authBox() + footer();
     bindGate(view);
     drawReviews(view);
+    try { QuickCalc.bind(view); } catch (e) {}
     var go = U.$$('[data-scroll]', view);
     go.forEach(function (b) {
       b.onclick = function () {
@@ -170,6 +171,8 @@ window.Auth = (function () {
           '<figcaption>실제 화면입니다. 매출 옆에 <b>원가와 순이익</b>이 같이 나옵니다.</figcaption>' +
         '</figure>' +
       '</section>' +
+
+      QuickCalc.html() +
 
       // 2. 공감 — 사장님이 겪은 그 문제
       '<section class="card lp-pain">' +
@@ -275,8 +278,8 @@ window.Auth = (function () {
             '<div class="plan-amt">' + U.won(PRICE_YEAR) + '</div>' +
             '<div class="cap-sub">한 달에 ' + U.won(Math.round(PRICE_YEAR / 12)) + ' 꼴</div></div>' +
         '</div>' +
-        '<p class="lp-worth">월 ' + U.won(PRICE) + '은 <b>케이크 한 개 값의 일부</b>입니다.<br>' +
-        '원가를 잘못 잡아 <b>8만원짜리 하나를 손해 보고 팔면, 구독료 8개월치</b>입니다.</p>' +
+        '<p class="lp-worth">월 ' + U.won(PRICE) + ' — <b>케이크 한 조각 값</b>입니다.<br>' +
+        '원가를 잘못 잡아 <b>8만원짜리 하나를 손해 보고 팔면, 구독료 1년치가 넘습니다.</b></p>' +
         '<p class="hint">가입 후 <b>' + TRIAL_MONTHS + '개월은 무료</b>이고, 체험 기간에는 결제 수단을 받지 않습니다. ' +
         '현재 결제는 계좌이체로 받고 있습니다.</p>' +
       '</section>' +

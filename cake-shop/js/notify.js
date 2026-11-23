@@ -1,6 +1,6 @@
-/* 고객 알림 - 주문 당일 / 픽업 전날 / 픽업 후 3가지 문자
-   문자는 사장님 요금제의 기본 제공 문자를 쓰기 때문에 추가 비용이 들지 않습니다.
-   (버튼을 누르면 문자앱이 내용이 채워진 채로 열립니다) */
+/* 손님에게 보낼 문구 만들기 - 주문 당일 / 픽업 전날 / 픽업 후
+   자동으로 발송되지는 않습니다. 문구를 만들어 드리면 사장님이 보내기만 누르시면 됩니다.
+   (문자앱이나 카카오톡이 내용이 채워진 채로 열립니다 — 그래서 발송 비용이 들지 않습니다) */
 window.Notify = (function () {
 
   var STAGES = [
@@ -108,9 +108,11 @@ window.Notify = (function () {
 
     view.innerHTML = '' +
       '<div class="card">' +
-        '<h2>💬 오늘 보낼 알림 ' + (total ? '<span class="badge">' + total + '건</span>' : '') + '</h2>' +
-        '<p class="hint">사장님 요금제의 기본 문자를 쓰기 때문에 <b>추가 비용이 들지 않습니다.</b> ' +
-        '[문자 보내기]를 누르면 휴대폰 문자앱이 내용이 채워진 채로 열려요. 보내기만 누르시면 됩니다.</p>' +
+        '<h2>✍️ 오늘 보낼 문구 ' + (total ? '<span class="badge">' + total + '건</span>' : '') + '</h2>' +
+        '<p class="hint"><b>자동으로 보내지지는 않습니다.</b> 문구를 대신 만들어 드리면, ' +
+        '버튼을 눌러 문자앱이나 카카오톡을 열고 <b>사장님이 보내기만</b> 누르시면 됩니다.<br>' +
+        '<span class="cap-sub">그래서 발송 비용이 한 푼도 들지 않습니다. ' +
+        '완전 자동 발송(알림톡)은 카카오 심사와 건당 요금이 필요해서 아직 넣지 않았습니다.</span></p>' +
         '<div class="grid three">' +
           STAGES.map(function (s) {
             return '<div class="stat ' + (q[s.key].length ? 'rose' : '') + '">' +
@@ -140,7 +142,7 @@ window.Notify = (function () {
       '</div>' +
 
       '<div class="card">' +
-        '<h2>✍️ 알림 문구 편집</h2>' +
+        '<h2>⚙️ 문구 고치기</h2>' +
         '<p class="hint">중괄호 두 개로 감싼 부분은 주문 내용으로 자동으로 바뀝니다: ' +
         ['가게이름', '고객명', '픽업일', '픽업시간', '주문내용', '금액', '예약금', '잔금'].map(function (v) {
           return '<code>{{' + v + '}}</code>';
@@ -184,7 +186,8 @@ window.Notify = (function () {
         '<div class="row">' +
           (U.phoneDigits(o.phone) ? '<button class="btn small" data-sms>📱 문자 보내기</button>'
                                   : '<span class="badge red">연락처가 없어 문자를 보낼 수 없어요</span>') +
-          '<button class="btn ghost small" data-copy>📋 카톡용 복사</button>' +
+          '<button class="btn ghost small" data-kakao>💬 카카오톡으로 보내기</button>' +
+          '<button class="btn ghost small" data-copy>📋 복사</button>' +
           '<button class="btn mint small" data-mark>✓ 보냄 표시</button>' +
         '</div></div>';
     }).join('') : '<div class="empty">지금 보낼 ' + stage.label + ' 알림이 없어요.</div>';
@@ -207,6 +210,27 @@ window.Notify = (function () {
           '<td>' + x.stage.emoji + ' ' + x.stage.label + '</td>' +
           '<td class="num"><button class="btn ghost small" data-undo="' + x.order.id + '" data-undo-stage="' + x.stage.key + '">되돌리기</button></td></tr>';
       }).join('') + '</tbody></table></div></details>';
+  }
+
+  /* ---------- 카카오톡 열기 ----------
+     휴대폰에서는 카카오톡이 열리고, 컴퓨터에서는 문구를 복사해 드립니다.
+     (카카오는 프로그램이 대신 보내는 것을 허용하지 않아서, 보내기는 사장님이 누르셔야 합니다) */
+  function openKakao(text) {
+    var isMobile = /Android|iP(hone|ad|od)/.test(navigator.userAgent);
+    if (!isMobile) {
+      U.copyText(text);
+      U.toast('문구를 복사했어요. 카카오톡에 붙여넣어 보내주세요');
+      return;
+    }
+    U.copyText(text);
+    var t0 = Date.now();
+    // 카카오톡 앱 열기 (설치돼 있지 않으면 아무 일도 일어나지 않습니다)
+    window.location.href = 'kakaotalk://';
+    setTimeout(function () {
+      if (Date.now() - t0 < 2200) {
+        U.toast('카카오톡을 열지 못했어요. 문구는 복사해 뒀으니 붙여넣어 주세요');
+      }
+    }, 1500);
   }
 
   /* ---------- 문자앱 열기 ---------- */
@@ -236,6 +260,10 @@ window.Notify = (function () {
         var msg = buildMessage(stage, o);
         if (t.hasAttribute('data-sms')) {
           window.location.href = smsLink(o.phone, msg);
+          setTimeout(function () { markSent(id, stage, true); next(); }, 1200);
+        }
+        if (t.hasAttribute('data-kakao')) {
+          openKakao(msg);
           setTimeout(function () { markSent(id, stage, true); next(); }, 1200);
         }
         if (t.hasAttribute('data-copy')) U.copyText(msg);

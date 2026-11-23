@@ -49,6 +49,9 @@ window.Orders = (function () {
           '<div class="field"><label>예약금 (받은 돈)</label>' +
             '<input name="deposit" type="number" min="0" step="any" placeholder="20000"></div>' +
         '</div>' +
+        '<div class="field"><label>걸린 시간 (시간) ' +
+          '<span class="cap-sub" style="font-weight:400">— 적어두시면 시간당 얼마 버는지 계산됩니다</span></label>' +
+          '<input name="hours" type="number" min="0" step="0.5" placeholder="3"></div>' +
         '<div class="field"><label>참고사항</label>' +
           '<textarea name="note" placeholder="예: 알러지 - 견과류 제외 / 주차 문의"></textarea></div>' +
         '<div class="grid two">' +
@@ -180,6 +183,7 @@ window.Orders = (function () {
     f.price.value = o.price || '';
     f.cost.value = o.cost || '';
     f.deposit.value = o.deposit || '';
+    f.hours.value = o.hours || '';
     f.note.value = o.note || '';
     f.source.value = o.source || 'manual';
     f.status.value = o.status || 'reserved';
@@ -216,6 +220,7 @@ window.Orders = (function () {
       price: U.toNum(f.price.value),
       cost: U.toNum(f.cost.value),
       deposit: U.toNum(f.deposit.value),
+      hours: U.toNum(f.hours.value),
       note: f.note.value.trim(),
       source: f.source.value,
       status: f.status.value,

@@ -419,3 +419,36 @@ code{background:#f6efe9;padding:1px 5px;border-radius:5px;font-size:13px}
   .lp-sign{flex-direction:column;text-align:center}
   .logged-out .view > section.card{padding:20px 16px}
 }
+
+/* ===== 가입 없이 쓰는 계산기 ===== */
+.qc{border:1.5px solid var(--forest)!important;background:linear-gradient(180deg,var(--forest-soft),var(--card) 140px)}
+.qc-head h2{margin-bottom:8px}
+.qc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0 16px}
+.qc-unit{color:var(--ink-soft);font-weight:400;font-size:12px}
+.qc-grid input{text-align:right;font-size:16px;font-weight:600}
+
+.qc-result{border-radius:12px;padding:18px;border:1px solid var(--line);background:var(--card)}
+.qc-result.qc-empty{text-align:center;color:var(--ink-soft);padding:26px;border-style:dashed}
+.qc-result.qc-empty p{margin:0;font-size:14px}
+.qc-result.qc-good{border-color:#bfe0d4;background:#f4faf7}
+.qc-result.qc-warn{border-color:#f0cf9a;background:#fff9ef}
+.qc-result.qc-bad{border-color:#f0b4b1;background:#fff5f4}
+
+.qc-nums{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:12px;margin-bottom:14px}
+.qc-num{text-align:center;padding:12px 8px;background:#fff;border:1px solid var(--line);border-radius:10px}
+.qc-num .qc-label{font-size:12.5px;color:var(--ink-soft);margin-bottom:4px}
+.qc-num .qc-value{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.qc-num.big .qc-value{font-size:24px}
+.qc-num.good .qc-value{color:var(--mint)}
+.qc-num.warn .qc-value{color:var(--amber)}
+.qc-num.bad .qc-value{color:var(--red)}
+.qc-verdict{margin:0;line-height:1.8;font-size:15px;word-break:keep-all}
+.qc-hint{margin:10px 0 0;font-size:13.5px;color:var(--ink-soft);line-height:1.75;word-break:keep-all}
+.qc-cta{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);text-align:center}
+.qc-cta p{margin:0 0 10px;font-size:14.5px}
+
+@media (max-width:640px){
+  .qc-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .qc-nums{grid-template-columns:1fr 1fr;gap:8px}
+  .qc-num.big{grid-column:span 2}
+}

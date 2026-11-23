@@ -180,6 +180,19 @@ window.Auth = (function () {
           '<li>재료비가 올랐는데 <b>가격을 올려야 하는지 판단이 안 설 때</b></li>' +
           '<li>“이 메뉴, 사실 남는 게 거의 없는 거 아닐까?” 싶은데 계산해볼 엄두가 안 날 때</li>' +
         '</ul>' +
+        '<div class="lp-ba">' +
+          '<figure class="lp-ba-item photo">' +
+            '<img src="img/note-before.jpg" alt="손으로 적은 픽업 주문 메모" loading="lazy">' +
+            '<figcaption><span class="lp-tag">전에는</span> 포스트잇 한 장에 그날 주문 전부. ' +
+            '한 장 잃어버리면 주문 하나가 통째로 사라집니다.</figcaption>' +
+          '</figure>' +
+          '<div class="lp-ba-arrow" aria-hidden="true">→</div>' +
+          '<figure class="lp-ba-item">' +
+            pic('monthly', '월별정산 화면') +
+            '<figcaption><span class="lp-tag on">지금은</span> 적는 순간 달력에 올라가고, ' +
+            '월말에 <b>원가와 이익</b>까지 같이 나옵니다.</figcaption>' +
+          '</figure>' +
+        '</div>' +
         '<p class="hint">주문 관리를 도와주는 프로그램은 많습니다. ' +
         '그런데 <b>“그래서 얼마 남았는지”</b>까지 알려주는 곳은 드뭅니다.</p>' +
       '</section>' +
@@ -188,11 +201,11 @@ window.Auth = (function () {
       '<section class="card">' +
         '<h2>이 노트가 하는 일</h2>' +
         '<div class="grid three lp-points">' +
-          point('💰', '원가와 이익을 같이', '주문 내용을 적으면 원가표에서 원가를 자동으로 가져옵니다. ' +
+          point('coin', '원가와 이익을 같이', '주문 내용을 적으면 원가표에서 원가를 자동으로 가져옵니다. ' +
             '월말에 <b>매출·원가·순이익</b>이 한 표에 나옵니다.') +
-          point('📅', '픽업 날짜를 놓치지 않게', '주문을 적으면 달력에 자동으로 올라갑니다. ' +
+          point('cal', '픽업 날짜를 놓치지 않게', '주문을 적으면 달력에 자동으로 올라갑니다. ' +
             '오늘·내일 픽업이 홈 화면 맨 위에 뜹니다.') +
-          point('💬', '카톡 대화를 그대로', '손님과 나눈 대화를 <b>복사해서 붙여넣기만</b> 하면 ' +
+          point('chat', '카톡 대화를 그대로', '손님과 나눈 대화를 <b>복사해서 붙여넣기만</b> 하면 ' +
             '이름·연락처·픽업날짜·금액을 알아서 뽑아 정리합니다.') +
         '</div>' +
       '</section>' +
@@ -210,6 +223,11 @@ window.Auth = (function () {
       // 5. 만든 사람 — 가장 센 무기
       '<section class="card lp-maker">' +
         '<h2>누가 만들었나요</h2>' +
+        '<div class="lp-photos">' +
+          '<img src="img/work-icing.jpg" alt="케이크에 크림을 바르는 작업" loading="lazy">' +
+          '<img src="img/work-oven.jpg" alt="오븐에서 구워지는 쿠키" loading="lazy">' +
+          '<img src="img/work-pack.jpg" alt="포장을 마친 답례품 상자" loading="lazy">' +
+        '</div>' +
         '<p><b>8개월 동안 케이크와 디저트 제작 공방을 직접 운영하며 고민했던 1인 사장입니다.</b></p>' +
         '<p>제 고민과 제가 실제로 했던 실수들을 토대로, 이를 보완하고 건강하게 경영하고자 만들었습니다. ' +
         '지금도 <b>제 사업에 직접 쓰고 있는 프로그램</b>입니다.</p>' +
@@ -217,6 +235,12 @@ window.Auth = (function () {
         '<blockquote class="lp-quote">매출보다는 원가, 그래서 <b>나에게 남는 돈이 얼마인지</b>에 초점을 맞췄습니다.<br>' +
         '내가 투여한 노력과 시간 대비 얼마나 남는지 알아야 ' +
         '<b>지속적으로 경영을 할 수 있기 때문</b>입니다.</blockquote>' +
+        '<div class="lp-sign">' +
+          '<img src="img/card-gretp.jpg" alt="그랫피 케이크 명함" loading="lazy">' +
+          '<div><b>그랫피 케이크</b><br>' +
+          '<span class="cap-sub">Customized Cake &amp; Flower · 고객 맞춤 100% 예약제</span><br>' +
+          '<span class="cap-sub">지금도 이 노트로 주문을 받고 있습니다.</span></div>' +
+        '</div>' +
         '<p class="hint">피드백은 언제든 환영합니다. 써보시고 알려주시면, ' +
         '여러 공방에 공통으로 해당하는 부분은 빠르게 고치겠습니다. ' +
         '우리 가게에 맞춘 제작을 원하시면 <a href="mailto:' + CONTACT + '">' + CONTACT + '</a> 로 메일 주세요.</p>' +
@@ -226,12 +250,12 @@ window.Auth = (function () {
       '<section class="card lp-trust">' +
         '<h2>손님 정보를 맡기시는 거니까</h2>' +
         '<div class="grid two">' +
-          trust('🇰🇷', '자료는 국내 서버에', '모든 자료는 <b>대한민국(서울) 서버</b>에 보관됩니다.') +
-          trust('🔒', '가게끼리 완전히 분리', '데이터베이스 단계에서 계정별로 나눠 두어 ' +
+          trust('shield', '자료는 국내 서버에', '모든 자료는 <b>대한민국(서울) 서버</b>에 보관됩니다.') +
+          trust('shield', '가게끼리 완전히 분리', '데이터베이스 단계에서 계정별로 나눠 두어 ' +
             '<b>다른 가게 자료는 아예 열리지 않습니다.</b>') +
-          trust('🔑', '비밀번호는 저도 못 봅니다', '되돌릴 수 없는 방식으로 암호화해 저장합니다. ' +
+          trust('clock', '비밀번호는 저도 못 봅니다', '되돌릴 수 없는 방식으로 암호화해 저장합니다. ' +
             '모든 통신은 HTTPS로 암호화됩니다.') +
-          trust('📤', '내 자료는 언제든 내 손에', '버튼 한 번으로 전체 백업 파일과 엑셀(CSV)로 내려받을 수 있습니다.') +
+          trust('note', '내 자료는 언제든 내 손에', '버튼 한 번으로 전체 백업 파일과 엑셀(CSV)로 내려받을 수 있습니다.') +
         '</div>' +
         '<div class="info lp-promise"><b>약속 하나 더 — 구독을 멈추셔도 자료를 잠그지 않습니다.</b><br>' +
         '결제를 안 하시면 새로 저장하는 것만 막힙니다. ' +
@@ -306,8 +330,22 @@ window.Auth = (function () {
     }).catch(function () {});
   }
 
+  // 선으로 그린 아이콘 (이모지는 '빨리 만든 티'가 나서 직접 그렸습니다)
+  var ICON = {
+    coin: '<circle cx="12" cy="12" r="8"/><path d="M12 8v8M14.5 9.8c-.6-.6-1.6-.9-2.5-.9-1.4 0-2.3.7-2.3 1.7 0 2.4 5 1.1 5 3.5 0 1-1 1.8-2.4 1.8-1 0-2-.3-2.6-1"/>',
+    cal:  '<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="1.3" fill="currentColor" stroke="none"/>',
+    chat: '<path d="M20.5 12c0 3.9-3.8 7-8.5 7-1 0-2-.1-2.9-.4L4 20l1.3-3.3C4.2 15.4 3.5 13.8 3.5 12c0-3.9 3.8-7 8.5-7s8.5 3.1 8.5 7Z"/><path d="M8.5 11.5h7M8.5 14h4.5"/>',
+    shield: '<path d="M12 3.5 5 6.2v5c0 4.2 2.9 8 7 9.3 4.1-1.3 7-5.1 7-9.3v-5L12 3.5Z"/><path d="m9 12 2.2 2.2L15.3 10"/>',
+    note: '<path d="M6 3.5h8.5L19 8v12.5H6V3.5Z"/><path d="M14 3.5V8h5"/><path d="M9 12h7M9 15.5h5"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.3l3.4 2"/>'
+  };
+  function svg(name) {
+    return '<svg class="lp-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      (ICON[name] || '') + '</svg>';
+  }
   function point(ico, title, body) {
-    return '<div class="lp-point"><div class="lp-ico">' + ico + '</div>' +
+    return '<div class="lp-point"><div class="lp-ico">' + svg(ico) + '</div>' +
       '<b>' + title + '</b><p>' + body + '</p></div>';
   }
   // 휴대폰에서는 휴대폰 화면 캡처를, 큰 화면에서는 PC 캡처를 보여줍니다
@@ -323,7 +361,7 @@ window.Auth = (function () {
       '<figcaption><b>' + title + '</b> — ' + cap + '</figcaption></figure>';
   }
   function trust(ico, title, body) {
-    return '<div class="feature"><div class="f-ico">' + ico + '</div>' +
+    return '<div class="feature"><div class="f-ico">' + svg(ico) + '</div>' +
       '<div><b>' + title + '</b><br><span class="cap-sub">' + body + '</span></div></div>';
   }
   function faq(q, a) {

@@ -25,6 +25,11 @@ window.Invite = (function () {
     // 이미 로그인한 회원은 그냥 통과 (초대 코드와 무관)
     if (SB.loggedIn()) { passed = true; return Promise.resolve(true); }
     if (stored()) { passed = true; return Promise.resolve(true); }
+    // 가입 인증·비밀번호 재설정 메일의 링크를 누르고 온 경우에도 통과시킵니다.
+    // (그 주소에는 서버가 발급한 로그인 정보가 붙어 있습니다)
+    if (String(location.hash || '').indexOf('access_token=') >= 0) {
+      passed = true; remember(); return Promise.resolve(true);
+    }
 
     var code = '';
     try { code = new URLSearchParams(location.search).get(PARAM) || ''; } catch (e) { code = ''; }

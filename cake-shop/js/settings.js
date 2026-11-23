@@ -44,6 +44,8 @@ window.Settings = (function () {
         '사진은 서버에 따로 보관되고 있어서, 다시 로그인하면 그대로 보입니다.</p>' +
       '</div>' +
 
+      reviewCard() +
+
       '<div class="card">' +
         '<h2>🧪 예시 데이터 / 초기화</h2>' +
         '<div class="row">' +
@@ -126,8 +128,63 @@ window.Settings = (function () {
     };
   }
 
+  /* ---------- 사용 후기 남기기 ---------- */
+  function reviewCard() {
+    return '<div class="card" id="revCard">' +
+      '<h2>✍️ 사용 후기 남기기</h2>' +
+      '<p class="hint">써보시니 어떠셨나요? 남겨주신 후기는 확인 후 ' +
+      '소개 화면에 실립니다. 다른 1인 사장님들이 결정할 때 큰 도움이 됩니다.</p>' +
+      '<div id="revBody"><p class="hint">불러오는 중...</p></div>' +
+      '</div>';
+  }
+
+  function drawReview(view) {
+    var box = U.$('#revBody', view);
+    if (!box) return;
+    SB.myReview().then(function (r) {
+      var mine = Array.isArray(r) ? r[0] : r;
+      var body = mine ? (mine.body || '') : '';
+      var author = mine ? (mine.author || '') : (DB.settings().shopName || '');
+      var rating = mine && mine.rating ? Number(mine.rating) : 5;
+      var state = !mine ? '' : (mine.approved
+        ? '<div class="info">✅ 소개 화면에 실렸습니다. 감사합니다!</div>'
+        : '<div class="info">⏳ 확인을 기다리는 중입니다. 내용은 아래에서 고치실 수 있어요.</div>');
+
+      box.innerHTML = state +
+        '<div class="grid two" style="margin-top:10px">' +
+          '<div class="field"><label>화면에 보일 이름</label>' +
+            '<input id="revAuthor" value="' + U.esc(author) + '" placeholder="예: 김○○ 사장님 · 디저트 공방"></div>' +
+          '<div class="field"><label>별점</label><select id="revRating">' +
+            [5,4,3,2,1].map(function (n) {
+              return '<option value="' + n + '"' + (n === rating ? ' selected' : '') + '>' +
+                new Array(n + 1).join('★') + ' ' + n + '점</option>';
+            }).join('') + '</select></div>' +
+        '</div>' +
+        '<div class="field"><label>후기 내용</label>' +
+          '<textarea id="revText" style="min-height:120px" maxlength="1000" ' +
+          'placeholder="쓰기 전에는 어떻게 관리하셨는지, 써보니 뭐가 달라졌는지 적어주시면 가장 도움이 됩니다.">' +
+          U.esc(body) + '</textarea></div>' +
+        '<div class="row end"><button class="btn" id="revSave">' +
+        (mine ? '후기 수정하기' : '후기 보내기') + '</button></div>';
+
+      U.$('#revSave', view).onclick = function () {
+        var btn = this;
+        var txt = U.$('#revText', view).value.trim();
+        if (!txt) { U.toast('후기 내용을 적어주세요'); return; }
+        btn.disabled = true;
+        SB.submitReview(txt, U.$('#revAuthor', view).value.trim(),
+                        U.toNum(U.$('#revRating', view).value))
+          .then(function () { U.toast('후기를 보냈어요. 고맙습니다!'); drawReview(view); })
+          .catch(function (e) { btn.disabled = false; U.toast(e.message); });
+      };
+    }).catch(function () {
+      box.innerHTML = '<div class="warn">후기를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.</div>';
+    });
+  }
+
   function bind(view) {
     bindAccount(view);
+    drawReview(view);
     view.addEventListener('click', function (e) {
       if (e.target.dataset.open) window.open(e.target.dataset.open, '_blank', 'noopener');
     });

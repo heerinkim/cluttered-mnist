@@ -358,3 +358,10 @@ code{background:#f6efe9;padding:1px 5px;border-radius:5px;font-size:13px}
 }
 
 .lp-pain li,.lp-point p,.lp-quote,.lp-worth,.lp-q p,.lp-shot figcaption{word-break:keep-all}
+
+/* 후기 */
+.lp-review{margin:0 0 18px;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.lp-review:last-child{margin-bottom:0}
+.lp-stars{color:var(--amber);letter-spacing:2px;font-size:14px}
+.lp-review blockquote{margin:8px 0 10px;line-height:1.85;word-break:keep-all}
+.lp-review figcaption{font-size:13.5px;color:var(--ink-soft)}

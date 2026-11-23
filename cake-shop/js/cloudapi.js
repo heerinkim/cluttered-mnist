@@ -250,6 +250,23 @@ window.SB = (function () {
     });
   }
 
+  /* ---------- 사용 후기 ---------- */
+  function submitReview(body, author, rating) {
+    return rpc('submit_review', { p_body: body, p_author: author || null, p_rating: rating || 5 });
+  }
+  function myReview() { return rpc('my_review'); }
+  function publicReviews() {
+    // 로그인하지 않은 분도 소개 화면에서 후기를 볼 수 있어야 합니다
+    return request('/rest/v1/rpc/public_reviews', { method: 'POST', noAuth: true, body: '{}' })
+      .then(function (r) { return r || []; }).catch(function () { return []; });
+  }
+  function adminReviews() { return rpc('admin_reviews'); }
+  function setReviewApproved(id, on) { return rpc('set_review_approved', { p_id: id, p_on: !!on }); }
+  function deleteReview(id) { return rpc('delete_review', { p_id: id }); }
+  function addReviewAsAdmin(author, body, rating) {
+    return rpc('add_review_as_admin', { p_author: author, p_body: body, p_rating: rating || 5 });
+  }
+
   /* ---------- 초대 코드 확인 (로그인 전에도 호출) ---------- */
   function checkInvite(code) {
     return request('/rest/v1/rpc/check_invite', {
@@ -386,6 +403,9 @@ window.SB = (function () {
     startCardPayment: startCardPayment, confirmCardPayment: confirmCardPayment,
     failCardPayment: failCardPayment,
     captureUrlSession: captureUrlSession,
-    checkInvite: checkInvite
+    checkInvite: checkInvite,
+    submitReview: submitReview, myReview: myReview, publicReviews: publicReviews,
+    adminReviews: adminReviews, setReviewApproved: setReviewApproved,
+    deleteReview: deleteReview, addReviewAsAdmin: addReviewAsAdmin
   };
 })();

@@ -3,7 +3,7 @@ window.Auth = (function () {
 
   var PRICE = 9900;             // 월 구독료
   var PRICE_YEAR = 99000;       // 연 구독료 (2개월 무료)
-  var TRIAL_MONTHS = 3;         // 무료 체험 기간
+  var TRIAL_MONTHS = 2;         // 무료 체험 기간
 
   /* 무통장입금 받을 계좌 — 관리자가 구독 화면에서 직접 입력합니다 (서버에 저장) */
   var BANK = { bank: '', account: '', holder: '' };
@@ -142,6 +142,7 @@ window.Auth = (function () {
   function renderGate(view) {
     view.innerHTML = landing() + authBox() + footer();
     bindGate(view);
+    drawReviews(view);
     var go = U.$$('[data-scroll]', view);
     go.forEach(function (b) {
       b.onclick = function () {
@@ -256,6 +257,12 @@ window.Auth = (function () {
         '현재 결제는 계좌이체로 받고 있습니다.</p>' +
       '</section>' +
 
+      // 7.5 먼저 써보신 분들
+      '<section class="card lp-reviews" id="lpReviews" hidden>' +
+        '<h2>먼저 써보신 사장님들</h2>' +
+        '<div id="lpReviewList"></div>' +
+      '</section>' +
+
       // 8. 자주 묻는 질문
       '<section class="card lp-faq">' +
         '<h2>자주 묻는 질문</h2>' +
@@ -275,6 +282,28 @@ window.Auth = (function () {
             '보이지 않습니다. 계정별로 데이터베이스 단계에서 분리되어 있어 ' +
             '다른 가게는 물론, 저도 사장님 손님 정보를 들여다보지 않습니다.') +
       '</section>';
+  }
+
+  function stars(n) {
+    n = Math.max(1, Math.min(5, Number(n) || 5));
+    return '<span class="lp-stars" aria-label="별 ' + n + '개">' +
+      new Array(n + 1).join('★') + new Array(6 - n).join('☆') + '</span>';
+  }
+
+  function drawReviews(view) {
+    SB.publicReviews().then(function (rows) {
+      if (!rows || !rows.length) return;
+      var box = U.$('#lpReviewList', view), sec = U.$('#lpReviews', view);
+      if (!box || !sec) return;
+      box.innerHTML = rows.map(function (r) {
+        return '<figure class="lp-review">' +
+          stars(r.rating) +
+          '<blockquote>' + U.esc(r.body).replace(/\n/g, '<br>') + '</blockquote>' +
+          '<figcaption>— ' + U.esc(r.author) + '</figcaption>' +
+          '</figure>';
+      }).join('');
+      sec.hidden = false;
+    }).catch(function () {});
   }
 
   function point(ico, title, body) {
@@ -775,6 +804,20 @@ window.Auth = (function () {
               '<span>회원들에게 카드결제 버튼을 보여줍니다</span></label>' +
             '<div class="row end"><button class="btn" id="tsSave">카드결제 설정 저장</button></div>' +
           '</div>' +
+          '<div class="card"><h2>🔑 후기 관리 (관리자)</h2>' +
+            '<p class="hint">회원이 남긴 후기를 확인하고 [공개]를 누르면 소개 화면에 실립니다. ' +
+            '카톡 등으로 받은 후기는 아래에서 직접 올리실 수 있습니다(본인 동의를 꼭 받으세요).</p>' +
+            '<div class="grid two">' +
+              '<div class="field"><label>이름</label><input id="arAuthor" placeholder="김○○ 사장님 · 디저트 공방"></div>' +
+              '<div class="field"><label>별점</label><select id="arRating">' +
+                [5,4,3,2,1].map(function (n) { return '<option value="' + n + '">' + n + '점</option>'; }).join('') +
+              '</select></div>' +
+            '</div>' +
+            '<div class="field"><label>내용</label><textarea id="arBody" style="min-height:80px"></textarea></div>' +
+            '<div class="row end"><button class="btn ghost" id="arAdd">후기 직접 올리기</button></div>' +
+            '<div id="arList"><p class="hint">불러오는 중...</p></div>' +
+          '</div>' +
+
           '<div class="card"><h2>🔑 입금 확인 (관리자)</h2>' +
           (!rows || !rows.length
             ? '<div class="empty">확인을 기다리는 입금 신청이 없어요.</div>'
@@ -805,6 +848,19 @@ window.Auth = (function () {
             save.disabled = false;
             drawPayState(view);
           }).catch(function (err) { save.disabled = false; U.toast(err.message); });
+        };
+
+        drawAdminReviews(box, view);
+        var arAdd = U.$('#arAdd', box);
+        if (arAdd) arAdd.onclick = function () {
+          var a = U.$('#arAuthor', box).value.trim(), b = U.$('#arBody', box).value.trim();
+          if (!a || !b) { U.toast('이름과 내용을 모두 적어주세요'); return; }
+          arAdd.disabled = true;
+          SB.addReviewAsAdmin(a, b, U.toNum(U.$('#arRating', box).value)).then(function () {
+            U.$('#arAuthor', box).value = ''; U.$('#arBody', box).value = '';
+            arAdd.disabled = false; U.toast('후기를 올렸어요');
+            drawAdminReviews(box, view);
+          }).catch(function (e) { arAdd.disabled = false; U.toast(e.message); });
         };
 
         var tsSave = U.$('#tsSave', box);
@@ -847,6 +903,46 @@ window.Auth = (function () {
         });
       });
     }).catch(function () { box.innerHTML = ''; });
+  }
+
+  function drawAdminReviews(box, view) {
+    var list = U.$('#arList', box);
+    if (!list) return;
+    SB.adminReviews().then(function (rows) {
+      if (!rows || !rows.length) {
+        list.innerHTML = '<div class="empty">아직 후기가 없어요.</div>'; return;
+      }
+      list.innerHTML = '<div class="table-wrap"><table><thead><tr><th>이름</th><th>내용</th>' +
+        '<th>별점</th><th>상태</th><th></th></tr></thead><tbody>' +
+        rows.map(function (r) {
+          return '<tr><td>' + U.esc(r.author) + '</td>' +
+            '<td style="max-width:320px">' + U.esc(String(r.body).slice(0, 160)) + '</td>' +
+            '<td>' + (r.rating || '-') + '</td>' +
+            '<td>' + (r.approved ? '<span class="badge mint">공개</span>' : '<span class="badge">대기</span>') + '</td>' +
+            '<td class="num">' +
+              '<button class="btn ' + (r.approved ? 'ghost' : 'mint') + ' small" data-rev="' + r.id +
+              '" data-on="' + (r.approved ? '0' : '1') + '">' + (r.approved ? '숨기기' : '공개') + '</button> ' +
+              '<button class="btn ghost small" data-revdel="' + r.id + '">삭제</button>' +
+            '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+
+      U.$$('[data-rev]', list).forEach(function (b) {
+        b.onclick = function () {
+          b.disabled = true;
+          SB.setReviewApproved(b.dataset.rev, b.dataset.on === '1')
+            .then(function () { drawAdminReviews(box, view); })
+            .catch(function (e) { b.disabled = false; U.toast(e.message); });
+        };
+      });
+      U.$$('[data-revdel]', list).forEach(function (b) {
+        b.onclick = function () {
+          if (!U.confirmBox('이 후기를 지울까요? 되돌릴 수 없습니다.')) return;
+          SB.deleteReview(b.dataset.revdel)
+            .then(function () { drawAdminReviews(box, view); })
+            .catch(function (e) { U.toast(e.message); });
+        };
+      });
+    }).catch(function () { list.innerHTML = ''; });
   }
 
   /* 화면 위쪽에 띄우는 남은 기간 안내 */

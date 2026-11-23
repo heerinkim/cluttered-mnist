@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>1인CEO 운영노트</title>
+<meta name="robots" content="noindex, nofollow">
 <style>
 :root{
   --cream:#fff9f3;
@@ -748,6 +749,14 @@ window.SB = (function () {
     });
   }
 
+  /* ---------- 초대 코드 확인 (로그인 전에도 호출) ---------- */
+  function checkInvite(code) {
+    return request('/rest/v1/rpc/check_invite', {
+      method: 'POST', noAuth: true,
+      body: JSON.stringify({ p_code: String(code || '') })
+    }).then(function (r) { return r === true; }).catch(function () { return false; });
+  }
+
   /* ---------- 카드결제 (토스페이먼츠) ----------
      금액과 주문번호는 서버가 정하고, 승인도 서버에서 합니다.
      비밀키(시크릿 키)는 브라우저에 들어오지 않습니다. */
@@ -875,7 +884,8 @@ window.SB = (function () {
     uploadPhoto: uploadPhoto, downloadPhoto: downloadPhoto, deletePhoto: deletePhoto,
     startCardPayment: startCardPayment, confirmCardPayment: confirmCardPayment,
     failCardPayment: failCardPayment,
-    captureUrlSession: captureUrlSession
+    captureUrlSession: captureUrlSession,
+    checkInvite: checkInvite
   };
 })();
 
@@ -4477,6 +4487,88 @@ window.Home = (function () {
   return { render: render };
 })();
 
+/* ===== js/invite.js ===== */
+/* 정식 공개 전 비공개 유지
+   - 초대 코드가 담긴 링크로 들어온 분, 그리고 이미 회원이신 분만 화면을 봅니다
+   - 그 밖에는 "준비 중" 안내만 보입니다
+   - 코드는 이 파일에 적혀 있지 않습니다. 서버(Supabase)에 물어봐서 확인합니다 */
+window.Invite = (function () {
+
+  var KEY = 'cakeshop:invitePass';
+  var PARAM = 'invite';
+  var passed = false;
+
+  function has() { return passed; }
+
+  function remember() {
+    passed = true;
+    try { localStorage.setItem(KEY, '1'); } catch (e) {}
+  }
+
+  function stored() {
+    try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; }
+  }
+
+  /* 앱이 시작될 때 먼저 불립니다.
+     통과하면 true, 막아야 하면 false 를 돌려줍니다. */
+  function check() {
+    // 이미 로그인한 회원은 그냥 통과 (초대 코드와 무관)
+    if (SB.loggedIn()) { passed = true; return Promise.resolve(true); }
+    if (stored()) { passed = true; return Promise.resolve(true); }
+
+    var code = '';
+    try { code = new URLSearchParams(location.search).get(PARAM) || ''; } catch (e) { code = ''; }
+    if (!code) return Promise.resolve(false);
+
+    return SB.checkInvite(code).then(function (ok) {
+      if (!ok) return false;
+      remember();
+      // 주소창에서 코드를 지워 둡니다 (남이 어깨너머로 보는 것 방지)
+      try { history.replaceState(null, '', location.pathname + (location.hash || '')); } catch (e) {}
+      return true;
+    }).catch(function () { return false; });
+  }
+
+  /* "준비 중" 화면 — 코드를 직접 넣어볼 수도 있게 해 둡니다 */
+  function renderClosed(view) {
+    view.innerHTML =
+      '<div class="card auth-card">' +
+        '<div class="auth-hero">' +
+          '<div class="auth-logo">🔨</div>' +
+          '<h2>준비 중입니다</h2>' +
+          '<p class="hint">1인 사업자를 위한 운영 노트를 만들고 있습니다.<br>' +
+          '정식 공개 전까지는 초대받은 분만 볼 수 있어요.</p>' +
+        '</div>' +
+        '<form id="invForm" novalidate style="margin-top:8px">' +
+          '<div class="field"><label>초대 코드</label>' +
+            '<input name="code" placeholder="초대 링크를 받으셨다면 그 링크로 들어와 주세요" autocomplete="off"></div>' +
+          '<button class="btn wide" type="submit">들어가기</button>' +
+        '</form>' +
+        '<div id="invMsg"></div>' +
+      '</div>';
+
+    U.$('#invForm', view).onsubmit = function (e) {
+      e.preventDefault();
+      var f = e.target;
+      var code = (f.code.value || '').trim();
+      var box = U.$('#invMsg', view);
+      if (!code) { box.innerHTML = '<div class="warn" style="margin-top:12px">초대 코드를 적어주세요.</div>'; return; }
+      U.$$('button, input', f).forEach(function (el) { el.disabled = true; });
+      box.innerHTML = '<div class="info" style="margin-top:12px">확인하는 중...</div>';
+      SB.checkInvite(code).then(function (ok) {
+        if (ok) { remember(); location.reload(); return; }
+        U.$$('button, input', f).forEach(function (el) { el.disabled = false; });
+        box.innerHTML = '<div class="warn" style="margin-top:12px">맞지 않는 코드예요. 받으신 링크를 다시 확인해 주세요.</div>';
+      }).catch(function () {
+        U.$$('button, input', f).forEach(function (el) { el.disabled = false; });
+        box.innerHTML = '<div class="warn" style="margin-top:12px">확인하지 못했어요. 인터넷 연결을 확인해 주세요.</div>';
+      });
+    };
+  }
+
+  return { check: check, has: has, renderClosed: renderClosed };
+})();
+
 /* ===== js/app.js ===== */
 /* 화면 전환(라우터) + 시작 */
 window.App = (function () {
@@ -4514,6 +4606,13 @@ window.App = (function () {
     if (Auth.isRecovering()) {
       document.body.classList.add('logged-out');
       try { Auth.renderNewPassword(view); } catch (e) { console.error(e); }
+      window.scrollTo({ top: 0 });
+      return;
+    }
+    // 정식 공개 전: 초대받지 않은 분에게는 "준비 중" 안내만 보여줍니다
+    if (!SB.loggedIn() && !Invite.has()) {
+      document.body.classList.add('logged-out');
+      try { Invite.renderClosed(view); } catch (e) { console.error(e); }
       window.scrollTo({ top: 0 });
       return;
     }
@@ -4593,6 +4692,11 @@ window.App = (function () {
 
   function start() {
     SB.loadSession();
+    // 정식 공개 전이라, 초대 코드를 먼저 확인하고 나서 화면을 그립니다
+    Invite.check().then(boot, boot);
+  }
+
+  function boot() {
     // 메일 링크(인증·비밀번호 재설정)를 눌러서 들어온 경우 주소에 붙어 온 로그인 정보를 받습니다
     var urlSession = null;
     try { urlSession = SB.captureUrlSession(); } catch (e) { urlSession = null; }

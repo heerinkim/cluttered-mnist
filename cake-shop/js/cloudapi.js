@@ -250,6 +250,14 @@ window.SB = (function () {
     });
   }
 
+  /* ---------- 초대 코드 확인 (로그인 전에도 호출) ---------- */
+  function checkInvite(code) {
+    return request('/rest/v1/rpc/check_invite', {
+      method: 'POST', noAuth: true,
+      body: JSON.stringify({ p_code: String(code || '') })
+    }).then(function (r) { return r === true; }).catch(function () { return false; });
+  }
+
   /* ---------- 카드결제 (토스페이먼츠) ----------
      금액과 주문번호는 서버가 정하고, 승인도 서버에서 합니다.
      비밀키(시크릿 키)는 브라우저에 들어오지 않습니다. */
@@ -377,6 +385,7 @@ window.SB = (function () {
     uploadPhoto: uploadPhoto, downloadPhoto: downloadPhoto, deletePhoto: deletePhoto,
     startCardPayment: startCardPayment, confirmCardPayment: confirmCardPayment,
     failCardPayment: failCardPayment,
-    captureUrlSession: captureUrlSession
+    captureUrlSession: captureUrlSession,
+    checkInvite: checkInvite
   };
 })();

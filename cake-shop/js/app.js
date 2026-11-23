@@ -37,6 +37,13 @@ window.App = (function () {
       window.scrollTo({ top: 0 });
       return;
     }
+    // 정식 공개 전: 초대받지 않은 분에게는 "준비 중" 안내만 보여줍니다
+    if (!SB.loggedIn() && !Invite.has()) {
+      document.body.classList.add('logged-out');
+      try { Invite.renderClosed(view); } catch (e) { console.error(e); }
+      window.scrollTo({ top: 0 });
+      return;
+    }
     // 로그인하지 않았으면 회원가입 / 로그인 화면만 보여줍니다
     if (!SB.loggedIn()) {
       document.body.classList.add('logged-out');
@@ -113,6 +120,11 @@ window.App = (function () {
 
   function start() {
     SB.loadSession();
+    // 정식 공개 전이라, 초대 코드를 먼저 확인하고 나서 화면을 그립니다
+    Invite.check().then(boot, boot);
+  }
+
+  function boot() {
     // 메일 링크(인증·비밀번호 재설정)를 눌러서 들어온 경우 주소에 붙어 온 로그인 정보를 받습니다
     var urlSession = null;
     try { urlSession = SB.captureUrlSession(); } catch (e) { urlSession = null; }

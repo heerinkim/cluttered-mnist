@@ -94,7 +94,17 @@ window.App = (function () {
   function refreshShopName() {
     var s = DB.settings();
     var name = s.shopName || '내 가게';
+    var subEl = U.$('.topbar .sub');
+    // 로그인 전(소개 화면)에는 서비스 이름을 보여줍니다 — 처음 온 분에게 "내 가게"는 뜬금없으니까요
+    if (!SB.loggedIn()) {
+      U.$('#shopName').textContent = '1인CEO 운영노트';
+      if (subEl) subEl.textContent = '주문 · 원가 · 이익을 한 곳에서';
+      document.title = '1인CEO 운영노트 — 이번 달, 얼마나 남으셨어요?';
+      refreshAcctChip();
+      return;
+    }
     U.$('#shopName').textContent = name;
+    if (subEl) subEl.textContent = '주문 · 정산 · 재고 · 원가 관리';
     // 보낼 알림이 있으면 브라우저 탭 제목에 건수를 붙여 놓치지 않게 함
     var n = 0;
     try { n = Notify.totalCount(); } catch (e) { n = 0; }

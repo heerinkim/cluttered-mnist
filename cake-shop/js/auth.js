@@ -137,14 +137,179 @@ window.Auth = (function () {
   function daysLeft() { return access ? Number(access.days_left || 0) : 0; }
 
   /* ================= 로그인 전 화면 ================= */
+  var CONTACT = 'gret_p2@naver.com';
+
   function renderGate(view) {
-    view.innerHTML =
-      '<div class="card auth-card">' +
+    view.innerHTML = landing() + authBox() + footer();
+    bindGate(view);
+    var go = U.$$('[data-scroll]', view);
+    go.forEach(function (b) {
+      b.onclick = function () {
+        var t = U.$('#authBox', view);
+        if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+    });
+  }
+
+  /* ---------- 로그인 전 소개 화면 ---------- */
+  function landing() {
+    return '' +
+      // 1. 첫 화면 — 가장 중요한 한 가지만 말합니다
+      '<section class="lp-hero">' +
+        '<div class="lp-badge">1인 사장님을 위한 운영 노트</div>' +
+        '<h1>이번 달, 얼마나 남으셨어요?</h1>' +
+        '<p class="lp-lead">매출은 통장에 찍히지만, <b>남는 돈은 아무도 알려주지 않습니다.</b><br>' +
+        '주문을 적으면 <b>원가와 이익까지 같이</b> 계산되는 장부입니다.</p>' +
+        '<div class="lp-cta">' +
+          '<button class="btn wide" data-scroll="1">' + TRIAL_MONTHS + '개월 무료로 시작하기</button>' +
+          '<p class="lp-fine">카드 등록 없음 · 언제든 해지 · 해지해도 내 자료는 계속 볼 수 있습니다</p>' +
+        '</div>' +
+        '<figure class="lp-shot lp-shot-hero">' +
+          pic('monthly', '월별정산 화면 — 총 매출, 총 원가, 순이익이 함께 보입니다', true) +
+          '<figcaption>실제 화면입니다. 매출 옆에 <b>원가와 순이익</b>이 같이 나옵니다.</figcaption>' +
+        '</figure>' +
+      '</section>' +
+
+      // 2. 공감 — 사장님이 겪은 그 문제
+      '<section class="card lp-pain">' +
+        '<h2>혹시 이러고 계시지 않나요?</h2>' +
+        '<ul class="lp-list">' +
+          '<li>주문은 카톡에, 일정은 수첩에, 매출은 머릿속에</li>' +
+          '<li>바빴던 달인데 통장에는 왜 이것밖에 안 남았는지 모르겠을 때</li>' +
+          '<li>재료비가 올랐는데 <b>가격을 올려야 하는지 판단이 안 설 때</b></li>' +
+          '<li>“이 메뉴, 사실 남는 게 거의 없는 거 아닐까?” 싶은데 계산해볼 엄두가 안 날 때</li>' +
+        '</ul>' +
+        '<p class="hint">주문 관리를 도와주는 프로그램은 많습니다. ' +
+        '그런데 <b>“그래서 얼마 남았는지”</b>까지 알려주는 곳은 드뭅니다.</p>' +
+      '</section>' +
+
+      // 3. 핵심 세 가지
+      '<section class="card">' +
+        '<h2>이 노트가 하는 일</h2>' +
+        '<div class="grid three lp-points">' +
+          point('💰', '원가와 이익을 같이', '주문 내용을 적으면 원가표에서 원가를 자동으로 가져옵니다. ' +
+            '월말에 <b>매출·원가·순이익</b>이 한 표에 나옵니다.') +
+          point('📅', '픽업 날짜를 놓치지 않게', '주문을 적으면 달력에 자동으로 올라갑니다. ' +
+            '오늘·내일 픽업이 홈 화면 맨 위에 뜹니다.') +
+          point('💬', '카톡 대화를 그대로', '손님과 나눈 대화를 <b>복사해서 붙여넣기만</b> 하면 ' +
+            '이름·연락처·픽업날짜·금액을 알아서 뽑아 정리합니다.') +
+        '</div>' +
+      '</section>' +
+
+      // 4. 화면 둘러보기
+      '<section class="card">' +
+        '<h2>화면 둘러보기</h2>' +
+        '<div class="lp-gallery">' +
+          shot('home', '홈', '오늘·내일 픽업할 주문과 이번 달 요약을 한눈에') +
+          shot('orders', '주문 · 달력', '주문서를 적으면 픽업 날짜에 자동으로 표시') +
+          shot('cost', '원가표', '메뉴 이름만 적으면 원가와 추천 판매가를 계산') +
+        '</div>' +
+      '</section>' +
+
+      // 5. 만든 사람 — 가장 센 무기
+      '<section class="card lp-maker">' +
+        '<h2>누가 만들었나요</h2>' +
+        '<p><b>8개월 동안 케이크와 디저트 제작 공방을 직접 운영하며 고민했던 1인 사장입니다.</b></p>' +
+        '<p>제 고민과 제가 실제로 했던 실수들을 토대로, 이를 보완하고 건강하게 경영하고자 만들었습니다. ' +
+        '지금도 <b>제 사업에 직접 쓰고 있는 프로그램</b>입니다.</p>' +
+        '<p>지인이 “나도 쓰고 싶다”고 한 것을 계기로, 다양한 공방에서 쓸 수 있게 다시 만들어 올렸습니다.</p>' +
+        '<blockquote class="lp-quote">매출보다는 원가, 그래서 <b>나에게 남는 돈이 얼마인지</b>에 초점을 맞췄습니다.<br>' +
+        '내가 투여한 노력과 시간 대비 얼마나 남는지 알아야 ' +
+        '<b>지속적으로 경영을 할 수 있기 때문</b>입니다.</blockquote>' +
+        '<p class="hint">피드백은 언제든 환영합니다. 써보시고 알려주시면, ' +
+        '여러 공방에 공통으로 해당하는 부분은 빠르게 고치겠습니다. ' +
+        '우리 가게에 맞춘 제작을 원하시면 <a href="mailto:' + CONTACT + '">' + CONTACT + '</a> 로 메일 주세요.</p>' +
+      '</section>' +
+
+      // 6. 믿고 맡기셔도 되는 이유
+      '<section class="card lp-trust">' +
+        '<h2>손님 정보를 맡기시는 거니까</h2>' +
+        '<div class="grid two">' +
+          trust('🇰🇷', '자료는 국내 서버에', '모든 자료는 <b>대한민국(서울) 서버</b>에 보관됩니다.') +
+          trust('🔒', '가게끼리 완전히 분리', '데이터베이스 단계에서 계정별로 나눠 두어 ' +
+            '<b>다른 가게 자료는 아예 열리지 않습니다.</b>') +
+          trust('🔑', '비밀번호는 저도 못 봅니다', '되돌릴 수 없는 방식으로 암호화해 저장합니다. ' +
+            '모든 통신은 HTTPS로 암호화됩니다.') +
+          trust('📤', '내 자료는 언제든 내 손에', '버튼 한 번으로 전체 백업 파일과 엑셀(CSV)로 내려받을 수 있습니다.') +
+        '</div>' +
+        '<div class="info lp-promise"><b>약속 하나 더 — 구독을 멈추셔도 자료를 잠그지 않습니다.</b><br>' +
+        '결제를 안 하시면 새로 저장하는 것만 막힙니다. ' +
+        '그동안 쌓은 주문·정산·원가는 <b>계속 보실 수 있고, 내려받으실 수도 있습니다.</b> ' +
+        '내 장부가 인질이 되는 일은 없습니다.</div>' +
+      '</section>' +
+
+      // 7. 가격
+      '<section class="card lp-price">' +
+        '<h2>요금</h2>' +
+        '<div class="grid two plans">' +
+          '<div class="lp-plan"><div class="lp-plan-name">월 결제</div>' +
+            '<div class="plan-amt">' + U.won(PRICE) + '</div>' +
+            '<div class="cap-sub">매달 결제 · 부가세 포함</div></div>' +
+          '<div class="lp-plan on"><div class="lp-plan-name">연 결제 ' +
+            '<span class="badge mint">2개월 무료</span></div>' +
+            '<div class="plan-amt">' + U.won(PRICE_YEAR) + '</div>' +
+            '<div class="cap-sub">한 달에 ' + U.won(Math.round(PRICE_YEAR / 12)) + ' 꼴</div></div>' +
+        '</div>' +
+        '<p class="lp-worth">월 ' + U.won(PRICE) + '은 <b>케이크 한 개 값의 일부</b>입니다.<br>' +
+        '원가를 잘못 잡아 <b>8만원짜리 하나를 손해 보고 팔면, 구독료 8개월치</b>입니다.</p>' +
+        '<p class="hint">가입 후 <b>' + TRIAL_MONTHS + '개월은 무료</b>이고, 체험 기간에는 결제 수단을 받지 않습니다. ' +
+        '현재 결제는 계좌이체로 받고 있습니다.</p>' +
+      '</section>' +
+
+      // 8. 자주 묻는 질문
+      '<section class="card lp-faq">' +
+        '<h2>자주 묻는 질문</h2>' +
+        faq('케이크 공방이 아니어도 쓸 수 있나요?',
+            '주문을 받아 날짜에 맞춰 만들어 전달하는 곳이면 잘 맞습니다. ' +
+            '디저트·베이킹·꽃·수공예 공방에서 쓰실 수 있습니다. 메뉴 이름과 원가는 직접 정하시면 됩니다.') +
+        faq('컴퓨터를 잘 못 다루는데 괜찮을까요?',
+            '만든 사람도 개발자가 아니라 공방 사장입니다. 설치할 것도, 배울 것도 없습니다. ' +
+            '주소만 열고 주문을 적으시면 됩니다. 막히는 부분은 메일로 물어보시면 직접 답해 드립니다.') +
+        faq('지금까지 쌓인 주문을 다시 입력해야 하나요?',
+            '아니요. 손님과 나눈 <b>카톡 대화를 그대로 복사해서 붙여넣으면</b> ' +
+            '이름·연락처·픽업날짜·금액을 알아서 뽑아 목록으로 만들어 드립니다.') +
+        faq('휴대폰에서도 되나요?',
+            '됩니다. 따로 앱을 받을 필요 없이 휴대폰 브라우저에서 같은 주소로 들어오시면 됩니다. ' +
+            '컴퓨터에서 적은 내용이 휴대폰에도 그대로 보입니다.') +
+        faq('손님 연락처가 다른 사람에게 보이지는 않나요?',
+            '보이지 않습니다. 계정별로 데이터베이스 단계에서 분리되어 있어 ' +
+            '다른 가게는 물론, 저도 사장님 손님 정보를 들여다보지 않습니다.') +
+      '</section>';
+  }
+
+  function point(ico, title, body) {
+    return '<div class="lp-point"><div class="lp-ico">' + ico + '</div>' +
+      '<b>' + title + '</b><p>' + body + '</p></div>';
+  }
+  // 휴대폰에서는 휴대폰 화면 캡처를, 큰 화면에서는 PC 캡처를 보여줍니다
+  function pic(name, alt, eager) {
+    return '<picture>' +
+      '<source media="(max-width:640px)" srcset="img/' + name + '-mo.png">' +
+      '<img src="img/' + name + '-pc.png" alt="' + U.esc(alt) + '" loading="' +
+      (eager ? 'eager' : 'lazy') + '">' +
+      '</picture>';
+  }
+  function shot(name, title, cap) {
+    return '<figure class="lp-shot">' + pic(name, title + ' 화면') +
+      '<figcaption><b>' + title + '</b> — ' + cap + '</figcaption></figure>';
+  }
+  function trust(ico, title, body) {
+    return '<div class="feature"><div class="f-ico">' + ico + '</div>' +
+      '<div><b>' + title + '</b><br><span class="cap-sub">' + body + '</span></div></div>';
+  }
+  function faq(q, a) {
+    return '<details class="lp-q"><summary>' + q + '</summary><p>' + a + '</p></details>';
+  }
+
+  /* ---------- 가입 / 로그인 ---------- */
+  function authBox() {
+    return '<div class="card auth-card" id="authBox">' +
         '<div class="auth-hero">' +
           '<div class="auth-logo">📒</div>' +
-          '<h2>1인CEO 운영노트</h2>' +
-          '<p class="hint">주문 · 달력 · 정산 · 재고 · 원가 · 갤러리 · 고객알림을 한 곳에서.<br>' +
-          '<b>가입 후 ' + TRIAL_MONTHS + '개월 무료</b>, 이후 월 ' + U.won(PRICE) + '.</p>' +
+          '<h2>' + (mode === 'signup' ? TRIAL_MONTHS + '개월 무료로 시작하기' : '1인CEO 운영노트') + '</h2>' +
+          '<p class="hint">' + (mode === 'signup'
+            ? '이메일만 있으면 바로 시작됩니다. 카드 등록은 받지 않습니다.'
+            : '이미 쓰고 계시면 로그인해 주세요.') + '</p>' +
         '</div>' +
         '<div class="row auth-tabs">' +
           '<button class="btn ' + (mode === 'login' ? '' : 'ghost') + '" data-mode="login">로그인</button>' +
@@ -152,9 +317,17 @@ window.Auth = (function () {
         '</div>' +
         (mode === 'signup' ? signupForm() : mode === 'reset' ? resetForm() : loginForm()) +
         '<div id="authMsg"></div>' +
-      '</div>' +
-      featureCard();
-    bindGate(view);
+      '</div>';
+  }
+
+  function footer() {
+    return '<footer class="lp-foot">' +
+      '<p><b>1인CEO 운영노트</b></p>' +
+      '<p><a href="terms.html#terms" target="_blank" rel="noopener">이용약관</a> · ' +
+      '<a href="terms.html#privacy" target="_blank" rel="noopener">개인정보처리방침</a> · ' +
+      '<a href="mailto:' + CONTACT + '">협업 문의 ' + CONTACT + '</a></p>' +
+      '<p class="cap-sub">주식회사 범고래그랫피</p>' +
+      '</footer>';
   }
 
   function loginForm() {

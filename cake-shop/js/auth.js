@@ -396,7 +396,7 @@ window.Auth = (function () {
       '<p><a href="terms.html#terms" target="_blank" rel="noopener">이용약관</a> · ' +
       '<a href="terms.html#privacy" target="_blank" rel="noopener">개인정보처리방침</a> · ' +
       '<a href="mailto:' + CONTACT + '">협업 문의 ' + CONTACT + '</a></p>' +
-      '<p class="cap-sub">주식회사 범고래그랫피</p>' +
+      '<p class="cap-sub">주식회사 범고래그랫피 · 통신판매업신고 제2026-화성병점-2512호</p>' +
       '</footer>';
   }
 
